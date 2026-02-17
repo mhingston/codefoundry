@@ -53,8 +53,11 @@ func ParseISOWeek(weekStr string) (time.Time, error) {
 
 	// Find the first day of the week
 	// January 4th is always in week 1
+	// The Monday of week 1 is calculated correctly for any weekday of Jan 4
 	jan4 := time.Date(year, time.January, 4, 0, 0, 0, 0, time.UTC)
-	week1Start := jan4.AddDate(0, 0, -int(jan4.Weekday())+1) // Monday of week 1
+	// Days to subtract to get to Monday (0=Monday in ISO, but Sunday=0 in Go)
+	daysToSubtract := (int(jan4.Weekday()) + 6) % 7
+	week1Start := jan4.AddDate(0, 0, -daysToSubtract) // Monday of week 1
 
 	// Add (week-1) weeks
 	return week1Start.AddDate(0, 0, (week-1)*7), nil

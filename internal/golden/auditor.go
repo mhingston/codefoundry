@@ -223,8 +223,8 @@ func getSnippet(lines []string, lineNum int) string {
 		return ""
 	}
 
-	// Return the line with some context
-	start := lineNum - 1
+	// Return the line with some context (previous, current, next)
+	start := lineNum - 2
 	if start < 0 {
 		start = 0
 	}

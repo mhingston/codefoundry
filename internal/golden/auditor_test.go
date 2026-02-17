@@ -138,7 +138,7 @@ func TestAuditor_shouldExclude(t *testing.T) {
 		{"node_modules/lib/file.js", true},
 		{".git/config", true},
 		{"src/main.go", false},
-		{"pkg/util_test.go", false}, // Not excluded by default
+		{"pkg/util_test.go", true}, // Excluded by default (_test.go pattern)
 	}
 
 	for _, tt := range tests {
