@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://codefoundry.ai/schemas/hook-request.schema.json",
+  "title": "CodeFoundry Hook Request Schema",
+  "description": "Schema for hook request payloads",
+  "type": "object",
+  "required": ["schema_version", "hook_type", "run_id", "stage_id"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["codefoundry_hook_request.v1"],
+      "description": "Schema version identifier"
+    },
+    "hook_type": {
+      "type": "string",
+      "enum": ["pre_stage", "pre_subagent", "post_subagent", "pre_merge", "post_stage"],
+      "description": "Type of hook being called"
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Unique run identifier"
+    },
+    "stage_id": {
+      "type": "string",
+      "description": "Stage identifier"
+    },
+    "stage_type": {
+      "type": "string",
+      "description": "Stage type"
+    },
+    "protocol_version": {
+      "type": "string",
+      "description": "Protocol version"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "previous_stage_outputs": {
+      "type": "object",
+      "description": "Outputs from previous stages",
+      "additionalProperties": true
+    },
+    "task": {
+      "type": "object",
+      "description": "Task details (for subagent hooks)",
+      "properties": {
+        "id": {"type": "string"},
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "files_to_modify": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "estimated_effort": {
+          "type": "string",
+          "enum": ["small", "medium", "large"]
+        }
+      }
+    },
+    "worktree": {
+      "type": "object",
+      "description": "Worktree details",
+      "properties": {
+        "id": {"type": "string"},
+        "path": {"type": "string"},
+        "branch": {"type": "string"}
+      }
+    },
+    "subagent_result": {
+      "type": "object",
+      "description": "Subagent execution result",
+      "properties": {
+        "status": {"type": "string", "enum": ["success", "failed"]},
+        "output": {"type": "string"},
+        "files_modified": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "turns_used": {"type": "integer"},
+        "tokens_used": {"type": "integer"},
+        "duration_ms": {"type": "integer"}
+      }
+    },
+    "merge_info": {
+      "type": "object",
+      "description": "Merge details (for pre_merge hook)",
+      "properties": {
+        "strategy": {"type": "string", "enum": ["fail", "ours", "theirs"]},
+        "base_branch": {"type": "string"},
+        "worktree_branch": {"type": "string"},
+        "files_changed": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "diff": {"type": "string"}
+      }
+    },
+    "gate_results": {
+      "type": "array",
+      "description": "Gate execution results",
+      "items": {
+        "type": "object",
+        "properties": {
+          "gate_id": {"type": "string"},
+          "status": {"type": "string", "enum": ["pass", "fail", "error", "skipped"]}
+        }
+      }
+    },
+    "stage_result": {
+      "type": "object",
+      "description": "Stage execution result (for post_stage hook)",
+      "properties": {
+        "status": {"type": "string", "enum": ["pass", "fail"]},
+        "duration_ms": {"type": "integer"},
+        "tasks_completed": {"type": "integer"},
+        "tasks_failed": {"type": "integer"},
+        "worktrees_merged": {"type": "integer"},
+        "merge_conflicts": {"type": "integer"}
+      }
+    },
+    "default_limits": {
+      "type": "object",
+      "description": "Default resource limits",
+      "properties": {
+        "max_turns": {"type": "integer"},
+        "max_tokens": {"type": "integer"},
+        "timeout_minutes": {"type": "integer"}
+      }
+    },
+    "default_env": {
+      "type": "object",
+      "description": "Default environment variables",
+      "additionalProperties": {"type": "string"}
+    },
+    "artifacts": {
+      "type": "array",
+      "description": "Artifact paths",
+      "items": {"type": "string"}
+    }
+  }
+}

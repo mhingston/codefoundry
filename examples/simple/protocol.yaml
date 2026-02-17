@@ -1,0 +1,69 @@
+name: "simple"
+version: "1.0.0"
+description: "Simple sequential workflow example"
+
+stages:
+  - id: plan
+    name: "Plan"
+    template: plan.md
+    outputs: [plan.md]
+    
+  - id: spec
+    name: "Specification"
+    template: spec.md
+    depends_on: [plan]
+    inputs: [plan.md]
+    outputs: [spec.md]
+    
+  - id: implement
+    name: "Implement"
+    template: implement.md
+    depends_on: [spec]
+    inputs: [spec.md]
+    outputs: ["**/*.go"]
+    
+  - id: verify
+    name: "Verify"
+    template: verify.md
+    depends_on: [implement]
+    gates: [lint, test]
+    outputs: [verify-report.json]
+    
+  - id: review
+    name: "Review"
+    template: review.md
+    depends_on: [verify]
+    inputs: [verify-report.json]
+    outputs: [review-report.json]
+    
+  - id: lock
+    name: "Lock"
+    type: decision
+    depends_on: [review]
+    outputs: [lock-decision.json]
+    
+  - id: compound
+    name: "Compound"
+    template: compound.md
+    depends_on: [lock]
+    condition: "lock.decision == 'resolved'"
+    outputs: [solution.md]
+
+gates:
+  - id: lint
+    name: "Lint"
+    command: "go vet ./..."
+    required: true
+    timeout: 60
+    
+  - id: test
+    name: "Test"
+    command: "go test ./..."
+    required: true
+    timeout: 300
+    
+  - id: fmt
+    name: "Format"
+    command: "test -z $(gofmt -l .)"
+    required: false
+    timeout: 30

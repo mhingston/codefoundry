@@ -1,0 +1,231 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://codefoundry.ai/schemas/protocol.schema.json",
+  "title": "CodeFoundry Protocol Schema",
+  "description": "Schema for protocol.yaml workflow definitions",
+  "type": "object",
+  "required": ["name", "version", "stages"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Unique name for the protocol"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version of the protocol",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the protocol"
+    },
+    "stages": {
+      "type": "array",
+      "description": "List of stages in the workflow",
+      "items": {
+        "$ref": "#/definitions/stage"
+      },
+      "minItems": 1
+    },
+    "gates": {
+      "type": "array",
+      "description": "Optional gate definitions",
+      "items": {
+        "$ref": "#/definitions/gate"
+      }
+    }
+  },
+  "definitions": {
+    "stage": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the stage (lowercase)",
+          "pattern": "^[a-z][a-z0-9_-]*$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name for the stage"
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional description"
+        },
+        "type": {
+          "type": "string",
+          "description": "Stage type: spec (default, harness executes), decompose (produces tasks), task_prompt (parallel subagents in worktrees), parallel (fan-out), decision (lock/evaluation)",
+          "enum": ["spec", "decompose", "task_prompt", "parallel", "decision"],
+          "default": "spec"
+        },
+        "source": {
+          "type": "string",
+          "description": "For decompose/task_prompt stages, the stage ID providing the task list (tasks.yaml)"
+        },
+        "parallel": {
+          "type": "boolean",
+          "description": "Whether to run tasks in parallel (task_prompt type only)",
+          "default": false
+        },
+        "worktree_strategy": {
+          "type": "string",
+          "description": "Merge strategy for worktrees (task_prompt type only)",
+          "enum": ["fail", "ours", "theirs"],
+          "default": "fail"
+        },
+        "max_concurrent": {
+          "type": "integer",
+          "description": "Maximum concurrent subagents (task_prompt type only)",
+          "minimum": 1,
+          "default": 5
+        },
+        "template": {
+          "type": "string",
+          "description": "Template filename in templates/ directory"
+        },
+        "depends_on": {
+          "type": "array",
+          "description": "IDs of stages that must complete first",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inputs": {
+          "type": "array",
+          "description": "Input artifacts from previous stages",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "description": "Expected output files",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gates": {
+          "type": "array",
+          "description": "Gates to run during verify stage",
+          "items": {
+            "type": "string"
+          }
+        },
+        "condition": {
+          "type": "string",
+          "description": "Conditional expression for stage execution"
+        },
+        "hooks": {
+          "type": "object",
+          "description": "Hook definitions for this stage",
+          "properties": {
+            "pre_stage": {
+              "type": "array",
+              "items": {"$ref": "#/definitions/hook"}
+            },
+            "pre_subagent": {
+              "type": "array",
+              "items": {"$ref": "#/definitions/hook"}
+            },
+            "post_subagent": {
+              "type": "array",
+              "items": {"$ref": "#/definitions/hook"}
+            },
+            "pre_merge": {
+              "type": "array",
+              "items": {"$ref": "#/definitions/hook"}
+            },
+            "post_stage": {
+              "type": "array",
+              "items": {"$ref": "#/definitions/hook"}
+            }
+          }
+        },
+        "source": {
+          "type": "string",
+          "description": "For decompose/parallel stages, the task source file"
+        }
+      }
+    },
+    "gate": {
+      "type": "object",
+      "required": ["id", "command"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Gate identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "command": {
+          "type": "string",
+          "description": "Shell command to execute"
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether gate failure blocks progression",
+          "default": true
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "Timeout in seconds",
+          "default": 300
+        },
+        "env": {
+          "type": "object",
+          "description": "Environment variables",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "hook": {
+      "type": "object",
+      "required": ["type", "url"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["api", "script", "command"],
+          "description": "Hook execution type"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL to call (for api type) or command to execute"
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "Timeout in seconds",
+          "default": 30
+        },
+        "retry": {
+          "type": "integer",
+          "description": "Number of retries on failure",
+          "default": 0
+        },
+        "async": {
+          "type": "boolean",
+          "description": "Whether hook is asynchronous (non-blocking)",
+          "default": false
+        },
+        "headers": {
+          "type": "object",
+          "description": "Additional HTTP headers",
+          "additionalProperties": {"type": "string"}
+        },
+        "secret": {
+          "type": "string",
+          "description": "Secret for request signing"
+        },
+        "env": {
+          "type": "object",
+          "description": "Environment variables (for script/command types)",
+          "additionalProperties": {"type": "string"}
+        }
+      }
+    }
+  }
+}

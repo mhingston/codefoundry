@@ -1,0 +1,93 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://codefoundry.ai/schemas/state.schema.json",
+  "title": "CodeFoundry State Schema",
+  "description": "Schema for runtime state.json",
+  "type": "object",
+  "required": ["schema_version", "run_id", "protocol_version", "stages"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["codefoundry_state.v1"],
+      "description": "Schema version identifier"
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Unique identifier for this run"
+    },
+    "protocol_version": {
+      "type": "string",
+      "description": "Version of protocol used"
+    },
+    "stages": {
+      "type": "object",
+      "description": "Stage states keyed by stage ID",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["pending", "running", "pass", "fail", "skipped"]
+          },
+          "artifact_path": {
+            "type": "string",
+            "description": "Path to stage artifacts"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "current_stage": {
+      "type": "string",
+      "description": "ID of currently executing stage"
+    },
+    "checkpoint": {
+      "type": "object",
+      "description": "Checkpoint data for resume",
+      "properties": {
+        "stage_id": {
+          "type": "string"
+        },
+        "data": {
+          "type": "object",
+          "description": "Opaque checkpoint data"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Run metadata",
+      "properties": {
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "user": {
+          "type": "string"
+        }
+      }
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last update timestamp"
+    }
+  }
+}

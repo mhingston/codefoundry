@@ -1,0 +1,37 @@
+# Binaries
+codefoundry
+build/
+dist/
+
+# Test artifacts
+*.test
+*.out
+coverage.html
+coverage.out
+
+# Go
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# CodeFoundry runtime
+.codefoundry/state/
+.codefoundry/artifacts/
+.codefoundry/reports/
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp

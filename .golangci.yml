@@ -1,0 +1,46 @@
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - gofmt
+    - revive
+    - govet
+    - errcheck
+    - staticcheck
+    - unused
+    - ineffassign
+    - typecheck
+    - misspell
+    - gosec
+    - unconvert
+    - goconst
+    - gocyclo
+    - dupl
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+  dupl:
+    threshold: 100
+  errcheck:
+    exclude-functions:
+      - (*os.File).Close
+      - (io.Closer).Close
+
+issues:
+  exclude-use-default: false
+  exclude:
+    - "Error return value of .Close. is not checked"
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gosec
+        - dupl
+        - goconst
+        - errcheck
+    - path: cmd/codefoundry/main\.go
+      linters:
+        - gocyclo
+      text: "completeStage"

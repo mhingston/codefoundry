@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://codefoundry.ai/schemas/lock-decision.schema.json",
+  "title": "CodeFoundry Lock Decision Schema",
+  "description": "Schema for lock stage decisions",
+  "type": "object",
+  "required": ["schema_version", "decision", "timestamp"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["codefoundry_lock_decision.v1"],
+      "description": "Schema version identifier"
+    },
+    "decision": {
+      "type": "string",
+      "enum": ["resolved", "reopen"],
+      "description": "Final decision - resolved to proceed, reopen to fix issues"
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-readable reasoning for decision"
+    },
+    "required_gate_ids": {
+      "type": "array",
+      "description": "IDs of gates that were required",
+      "items": {
+        "type": "string"
+      }
+    },
+    "passed_gate_ids": {
+      "type": "array",
+      "description": "IDs of gates that passed",
+      "items": {
+        "type": "string"
+      }
+    },
+    "failed_gate_ids": {
+      "type": "array",
+      "description": "IDs of gates that failed",
+      "items": {
+        "type": "string"
+      }
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Confidence score from review (0.0-1.0)"
+    },
+    "confidence_threshold": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Threshold for auto-approval"
+    },
+    "p1_findings": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of P1 (must fix) findings"
+    },
+    "p2_findings": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of P2 (should fix) findings"
+    },
+    "p3_findings": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of P3 (nice to fix) findings"
+    },
+    "rubric_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Overall rubric score"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp"
+    },
+    "escalation_required": {
+      "type": "boolean",
+      "description": "Whether human escalation was required"
+    },
+    "escalation_reason": {
+      "type": "string",
+      "description": "Reason for escalation if applicable"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://codefoundry.ai/schemas/review-result.schema.json",
+  "title": "CodeFoundry Review Result Schema",
+  "description": "Schema for AI-powered review stage results",
+  "type": "object",
+  "required": ["schema_version", "rubric_score", "confidence_score", "dimensions", "findings", "timestamp"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["codefoundry_review_result.v1"],
+      "description": "Schema version identifier"
+    },
+    "rubric_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Overall rubric score (0-100)"
+    },
+    "confidence_score": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Confidence score from LLM (0.0-1.0)"
+    },
+    "confidence_threshold": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "description": "Threshold for auto-approval"
+    },
+    "dimensions": {
+      "type": "object",
+      "required": ["correctness", "efficiency", "maintainability", "safety"],
+      "properties": {
+        "correctness": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Correctness dimension score (1-5)"
+        },
+        "efficiency": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Efficiency dimension score (1-5)"
+        },
+        "maintainability": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Maintainability dimension score (1-5)"
+        },
+        "safety": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "Safety dimension score (1-5)"
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "List of review findings",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "message", "category"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique finding identifier"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["P1", "P2", "P3"],
+            "description": "Finding severity: P1 (must fix), P2 (should fix), P3 (nice to fix)"
+          },
+          "file": {
+            "type": "string",
+            "description": "File path where finding was found"
+          },
+          "line": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Line number (0 if unknown)"
+          },
+          "column": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Column number (0 if unknown)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable finding description"
+          },
+          "category": {
+            "type": "string",
+            "description": "Finding category (security, performance, maintainability, style)"
+          },
+          "code": {
+            "type": "string",
+            "description": "Code snippet showing the issue"
+          },
+          "suggestion": {
+            "type": "string",
+            "description": "Suggested fix or improvement"
+          }
+        }
+      }
+    },
+    "p1_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of P1 (must fix) findings"
+    },
+    "p2_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of P2 (should fix) findings"
+    },
+    "p3_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of P3 (nice to fix) findings"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Human-readable summary of the review"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when review was completed"
+    },
+    "stage_id": {
+      "type": "string",
+      "description": "ID of the stage that produced this review"
+    },
+    "run_id": {
+      "type": "string",
+      "description": "ID of the run that produced this review"
+    }
+  }
+}
