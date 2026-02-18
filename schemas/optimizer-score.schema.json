@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CodeFoundry Optimizer Scorecard",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "timestamp",
+    "total_score",
+    "dimensions",
+    "inputs"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "codefoundry_optimizer_score.v1"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "total_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "dimensions": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["name", "weight", "raw_value", "contribution"],
+        "properties": {
+          "name": {"type": "string"},
+          "weight": {"type": "number", "minimum": 0, "maximum": 1},
+          "raw_value": {"type": "number", "minimum": 0, "maximum": 1},
+          "contribution": {"type": "number", "minimum": 0, "maximum": 100}
+        },
+        "additionalProperties": false
+      }
+    },
+    "inputs": {
+      "type": "object",
+      "required": [
+        "run_id",
+        "timestamp",
+        "gate_pass_rate",
+        "review_confidence",
+        "p1_count",
+        "p2_count",
+        "p3_count",
+        "replay_determinism",
+        "cycle_time"
+      ],
+      "properties": {
+        "run_id": {"type": "string"},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "gate_pass_rate": {"type": "number", "minimum": 0, "maximum": 1},
+        "review_confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "p1_count": {"type": "integer", "minimum": 0},
+        "p2_count": {"type": "integer", "minimum": 0},
+        "p3_count": {"type": "integer", "minimum": 0},
+        "replay_determinism": {"type": "number", "minimum": 0, "maximum": 1},
+        "cycle_time": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

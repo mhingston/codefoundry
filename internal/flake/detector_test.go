@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/mhingston/codefoundry/internal/artifact"
 	"github.com/mhingston/codefoundry/internal/replay"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -338,4 +339,19 @@ func TestDiffSummary(t *testing.T) {
 	assert.Equal(t, 3, summary.Count)
 	assert.Equal(t, "pass", summary.Expected)
 	assert.Len(t, summary.Variations, 2)
+}
+
+func TestSaveAndLoadReport(t *testing.T) {
+	tmp := t.TempDir()
+	ns := artifact.NewNamespace(tmp, "run-1")
+	store := artifact.NewStore(ns)
+
+	report := &FlakeReport{RunID: "run-1", ReplayCount: 3, SuccessRate: 0.66}
+	require.NoError(t, SaveReport(store, report))
+
+	loaded, err := LoadReport(store)
+	require.NoError(t, err)
+	assert.Equal(t, report.RunID, loaded.RunID)
+	assert.Equal(t, report.ReplayCount, loaded.ReplayCount)
+	assert.InDelta(t, report.SuccessRate, loaded.SuccessRate, 0.0001)
 }

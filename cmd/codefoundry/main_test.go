@@ -730,3 +730,10 @@ stages:
 	err = validateProtocol(protocolPath)
 	assert.Error(t, err)
 }
+
+func TestOptimizeSuggestCommandExists(t *testing.T) {
+	cmd, _, err := rootCmd.Find([]string{"optimize", "suggest"})
+	require.NoError(t, err)
+	require.NotNil(t, cmd)
+	assert.Equal(t, "suggest", cmd.Name())
+}

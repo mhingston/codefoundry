@@ -1,10 +1,12 @@
 package flake
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 	"time"
 
+	"github.com/mhingston/codefoundry/internal/artifact"
 	"github.com/mhingston/codefoundry/internal/replay"
 	stagepkg "github.com/mhingston/codefoundry/internal/stage"
 )
@@ -291,4 +293,37 @@ func (d *Detector) IsFlaky(runID string, replayCount int) (bool, error) {
 		return false, err
 	}
 	return report.IsFlaky, nil
+}
+
+// SaveReport saves a flake report into run artifacts.
+func SaveReport(store *artifact.Store, report *FlakeReport) error {
+	if report == nil {
+		return fmt.Errorf("flake report is required")
+	}
+
+	data, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal flake report: %w", err)
+	}
+
+	if err := store.Write("_flake", "flake-report.json", data); err != nil {
+		return fmt.Errorf("failed to save flake report: %w", err)
+	}
+
+	return nil
+}
+
+// LoadReport loads a flake report from run artifacts.
+func LoadReport(store *artifact.Store) (*FlakeReport, error) {
+	data, err := store.Read("_flake", "flake-report.json")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load flake report: %w", err)
+	}
+
+	var report FlakeReport
+	if err := json.Unmarshal(data, &report); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal flake report: %w", err)
+	}
+
+	return &report, nil
 }

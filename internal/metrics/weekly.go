@@ -14,24 +14,35 @@ import (
 	"github.com/mhingston/codefoundry/internal/artifact"
 	"github.com/mhingston/codefoundry/internal/gate"
 	"github.com/mhingston/codefoundry/internal/lock"
+	"github.com/mhingston/codefoundry/internal/optimizer"
 	"github.com/mhingston/codefoundry/internal/review"
 )
 
 // WeeklyMetrics represents metrics for a single week
 type WeeklyMetrics struct {
-	Week           string        `json:"week"` // ISO week format: 2026-W08
-	SuccessRate    float64       `json:"success_rate"`
-	AvgConfidence  float64       `json:"avg_confidence"`
-	AvgRubricScore int           `json:"avg_rubric_score"`
-	AvgCycleTime   time.Duration `json:"avg_cycle_time"`
-	P1Findings     int           `json:"p1_findings"`
-	P2Findings     int           `json:"p2_findings"`
-	P3Findings     int           `json:"p3_findings"`
-	GatePassRate   float64       `json:"gate_pass_rate"`
-	ReplayPassRate float64       `json:"replay_pass_rate"`
-	RunsCompleted  int           `json:"runs_completed"`
-	RunsFailed     int           `json:"runs_failed"`
-	TotalRuns      int           `json:"total_runs"`
+	Week              string             `json:"week"` // ISO week format: 2026-W08
+	SuccessRate       float64            `json:"success_rate"`
+	AvgConfidence     float64            `json:"avg_confidence"`
+	AvgRubricScore    int                `json:"avg_rubric_score"`
+	AvgCycleTime      time.Duration      `json:"avg_cycle_time"`
+	P1Findings        int                `json:"p1_findings"`
+	P2Findings        int                `json:"p2_findings"`
+	P3Findings        int                `json:"p3_findings"`
+	GatePassRate      float64            `json:"gate_pass_rate"`
+	ReplayPassRate    float64            `json:"replay_pass_rate"`
+	AvgOptimizerScore float64            `json:"avg_optimizer_score"`
+	ScoreEvolution    []RunScoreSnapshot `json:"score_evolution,omitempty"`
+	RunsCompleted     int                `json:"runs_completed"`
+	RunsFailed        int                `json:"runs_failed"`
+	TotalRuns         int                `json:"total_runs"`
+}
+
+// RunScoreSnapshot captures optimizer score by run for trending.
+type RunScoreSnapshot struct {
+	RunID      string    `json:"run_id"`
+	Week       string    `json:"week"`
+	Timestamp  time.Time `json:"timestamp"`
+	TotalScore float64   `json:"total_score"`
 }
 
 // GetISOWeek returns the ISO week string (e.g., "2026-W08")
@@ -98,19 +109,22 @@ func GetWeekRange(weekStr string) (start, end time.Time, err error) {
 
 // RunData represents data extracted from a single run
 type RunData struct {
-	RunID        string
-	Timestamp    time.Time
-	Success      bool
-	ReviewResult *review.ReviewResult
-	LockDecision *lock.LockDecision
-	GateResults  []gate.GateResult
-	CycleTime    time.Duration
+	RunID         string
+	Timestamp     time.Time
+	Success       bool
+	ReviewResult  *review.ReviewResult
+	LockDecision  *lock.LockDecision
+	GateResults   []gate.GateResult
+	CycleTime     time.Duration
+	Optimizer     *optimizer.Scorecard
+	ArtifactStore *artifact.Store
 }
 
 // ExtractRunData extracts metrics data from a run's artifacts
 func ExtractRunData(runID string, store *artifact.Store) (*RunData, error) {
 	data := &RunData{
-		RunID: runID,
+		RunID:         runID,
+		ArtifactStore: store,
 	}
 
 	// Try to get timestamp from trace
@@ -145,6 +159,10 @@ func ExtractRunData(runID string, store *artifact.Store) (*RunData, error) {
 
 	// Load gate results
 	data.GateResults = loadGateResults(store)
+
+	if score, err := optimizer.LoadScorecard(store); err == nil {
+		data.Optimizer = score
+	}
 
 	return data, nil
 }

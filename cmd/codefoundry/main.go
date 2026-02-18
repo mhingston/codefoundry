@@ -16,6 +16,7 @@ import (
 	"github.com/mhingston/codefoundry/internal/golden"
 	"github.com/mhingston/codefoundry/internal/lock"
 	"github.com/mhingston/codefoundry/internal/metrics"
+	"github.com/mhingston/codefoundry/internal/optimizer"
 	"github.com/mhingston/codefoundry/internal/protocol"
 	"github.com/mhingston/codefoundry/internal/replay"
 	"github.com/mhingston/codefoundry/internal/report"
@@ -79,6 +80,7 @@ func init() {
 	rootCmd.AddCommand(replayCmd)
 	rootCmd.AddCommand(flakeCmd)
 	rootCmd.AddCommand(metricsCmd)
+	rootCmd.AddCommand(optimizeCmd)
 	rootCmd.AddCommand(ciCmd)
 	rootCmd.AddCommand(goldenCmd)
 
@@ -93,6 +95,9 @@ func init() {
 	// Metrics command subcommands
 	metricsCmd.AddCommand(metricsGenerateCmd)
 	metricsCmd.AddCommand(metricsTrendCmd)
+
+	// Optimizer command subcommands
+	optimizeCmd.AddCommand(optimizeSuggestCmd)
 
 	// CI command subcommands
 	ciCmd.AddCommand(ciInitCmd)
@@ -149,6 +154,9 @@ func init() {
 	// Metrics command flags
 	metricsGenerateCmd.Flags().StringP("week", "w", "", "ISO week (default: current)")
 	metricsTrendCmd.Flags().IntP("weeks", "n", 4, "Number of weeks (default: 4)")
+
+	// Optimizer command flags
+	optimizeSuggestCmd.Flags().IntP("limit", "n", 3, "Number of suggestions to return")
 
 	// CI command flags
 	ciInitCmd.Flags().StringP("provider", "p", "github", "CI provider (default: github)")
@@ -879,6 +887,13 @@ var replayVerifyCmd = &cobra.Command{
 				return fmt.Errorf("replay failed: %w", err)
 			}
 
+			ns := artifact.NewNamespace(basePath, runID)
+			store := artifact.NewStore(ns)
+			_ = replay.SaveReplayResult(store, result)
+			if score, scoreErr := optimizer.ComputeFromArtifacts(runID, store); scoreErr == nil {
+				_ = optimizer.SaveScorecard(store, score)
+			}
+
 			if !result.Matches {
 				fmt.Printf("⚠️  Non-deterministic: %d differences found\n", len(result.Differences))
 				for _, diff := range result.Differences {
@@ -893,6 +908,13 @@ var replayVerifyCmd = &cobra.Command{
 			result, err := replay.ReplayMultiple(runID, runner, basePath, replayCount)
 			if err != nil {
 				return fmt.Errorf("replay failed: %w", err)
+			}
+
+			ns := artifact.NewNamespace(basePath, runID)
+			store := artifact.NewStore(ns)
+			_ = replay.SaveReplayResult(store, result)
+			if score, scoreErr := optimizer.ComputeFromArtifacts(runID, store); scoreErr == nil {
+				_ = optimizer.SaveScorecard(store, score)
 			}
 
 			if !result.Matches {
@@ -968,6 +990,13 @@ var flakeDetectCmd = &cobra.Command{
 			return fmt.Errorf("flake detection failed: %w", err)
 		}
 
+		ns := artifact.NewNamespace(basePath, runID)
+		store := artifact.NewStore(ns)
+		_ = flake.SaveReport(store, report)
+		if score, scoreErr := optimizer.ComputeFromArtifacts(runID, store); scoreErr == nil {
+			_ = optimizer.SaveScorecard(store, score)
+		}
+
 		// Output results
 		fmt.Printf("\nFlake Detection Report:\n")
 		fmt.Printf("  Run ID: %s\n", report.RunID)
@@ -1039,6 +1068,7 @@ var metricsGenerateCmd = &cobra.Command{
 		fmt.Printf("  P1 Findings: %d\n", report.P1Findings)
 		fmt.Printf("  P2 Findings: %d\n", report.P2Findings)
 		fmt.Printf("  P3 Findings: %d\n", report.P3Findings)
+		fmt.Printf("  Avg Optimizer Score: %.2f\n", report.AvgOptimizerScore)
 		fmt.Printf("  Runs Completed: %d\n", report.RunsCompleted)
 		fmt.Printf("  Runs Failed: %d\n", report.RunsFailed)
 
@@ -1093,6 +1123,52 @@ var metricsTrendCmd = &cobra.Command{
 		}
 
 		fmt.Printf("\nTrend saved to: .codefoundry/metrics/trend.json\n")
+		return nil
+	},
+}
+
+// Phase 4: Autonomy Hardening - Optimizer Commands
+
+var optimizeCmd = &cobra.Command{
+	Use:   "optimize",
+	Short: "Score and optimize protocol execution",
+	Long:  `Compute weighted optimizer scorecards and suggest highest-impact protocol/harness tweaks.`,
+}
+
+var optimizeSuggestCmd = &cobra.Command{
+	Use:   "suggest <run-id>",
+	Short: "Suggest protocol/harness improvements",
+	Long:  `Generate deterministic weighted scorecard and recommend tweaks from worst-contributing dimensions.`,
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		limit, _ := cmd.Flags().GetInt("limit")
+		runID := args[0]
+
+		ns := artifact.NewNamespace(basePath, runID)
+		store := artifact.NewStore(ns)
+
+		score, err := optimizer.ComputeFromArtifacts(runID, store)
+		if err != nil {
+			return fmt.Errorf("failed to compute optimizer score: %w", err)
+		}
+		if err := optimizer.SaveScorecard(store, score); err != nil {
+			return fmt.Errorf("failed to save optimizer score: %w", err)
+		}
+
+		fmt.Printf("Optimizer score for run %s: %.2f\n", runID, score.TotalScore)
+		for _, dim := range score.Dimensions {
+			fmt.Printf("  - %s: raw=%.2f, weight=%.2f, contribution=%.2f\n", dim.Name, dim.RawValue, dim.Weight, dim.Contribution)
+		}
+
+		suggestions := optimizer.SuggestTweaks(score, limit)
+		if len(suggestions) > 0 {
+			fmt.Println("\nRecommended next best tweaks:")
+			for i, s := range suggestions {
+				fmt.Printf("  %d. [%s] %s\n     -> %s\n", i+1, s.Dimension, s.Reason, s.Action)
+			}
+		}
+
+		fmt.Printf("\nScorecard saved to: %s\n", filepath.Join(basePath, "artifacts", runID, "optimizer", "score.json"))
 		return nil
 	},
 }

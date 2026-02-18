@@ -21,6 +21,7 @@ type ReplayResult struct {
 	Differences   []Difference `json:"differences"`
 	DurationMs    int64        `json:"duration_ms"`
 	ReplayCount   int          `json:"replay_count"`
+	Determinism   float64      `json:"determinism"`
 }
 
 // Difference represents a difference between expected and actual
@@ -104,6 +105,9 @@ func Replay(runID string, runner *stagepkg.Runner, basePath string) (*ReplayResu
 	result.DurationMs = time.Since(startTime).Milliseconds()
 	result.Matches = len(result.Differences) == 0
 	result.ReplayCount = 1
+	if result.Matches {
+		result.Determinism = 1
+	}
 
 	return result, nil
 }
@@ -137,6 +141,7 @@ func ReplayMultiple(runID string, runner *stagepkg.Runner, basePath string, coun
 		Differences:   consolidated,
 		DurationMs:    totalDuration / int64(count),
 		ReplayCount:   count,
+		Determinism:   determinismFromDifferences(consolidated),
 	}, nil
 }
 
@@ -343,4 +348,11 @@ func ListTraces(basePath string) ([]string, error) {
 	}
 
 	return traces, nil
+}
+
+func determinismFromDifferences(diffs []Difference) float64 {
+	if len(diffs) == 0 {
+		return 1
+	}
+	return 0
 }

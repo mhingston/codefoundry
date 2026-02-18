@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/mhingston/codefoundry/internal/artifact"
+	"github.com/mhingston/codefoundry/internal/optimizer"
 )
 
 // Generator generates metrics reports
@@ -49,14 +51,29 @@ func (g *Generator) GenerateWeekly(week string) (*WeeklyMetrics, error) {
 		}
 	}
 
+	// Ensure optimizer scores are available from artifacts for each run.
+	for _, run := range weekRuns {
+		if run.Optimizer != nil || run.ArtifactStore == nil {
+			continue
+		}
+		score, err := optimizer.ComputeFromArtifacts(run.RunID, run.ArtifactStore)
+		if err != nil {
+			continue
+		}
+		_ = optimizer.SaveScorecard(run.ArtifactStore, score)
+		run.Optimizer = score
+	}
+
 	// Generate metrics
 	metrics := &WeeklyMetrics{
-		Week:           week,
-		SuccessRate:    calculateSuccessRate(weekRuns),
-		AvgConfidence:  calculateAvgConfidence(weekRuns),
-		AvgRubricScore: calculateAvgRubricScore(weekRuns),
-		GatePassRate:   calculateGatePassRate(weekRuns),
-		TotalRuns:      len(weekRuns),
+		Week:              week,
+		SuccessRate:       calculateSuccessRate(weekRuns),
+		AvgConfidence:     calculateAvgConfidence(weekRuns),
+		AvgRubricScore:    calculateAvgRubricScore(weekRuns),
+		GatePassRate:      calculateGatePassRate(weekRuns),
+		AvgOptimizerScore: calculateAvgOptimizerScore(weekRuns),
+		ScoreEvolution:    buildScoreEvolution(week, weekRuns),
+		TotalRuns:         len(weekRuns),
 	}
 
 	// Calculate runs completed/failed
@@ -215,6 +232,47 @@ func (g *Generator) discoverRuns() ([]*RunData, error) {
 	}
 
 	return runs, nil
+}
+
+func calculateAvgOptimizerScore(runs []*RunData) float64 {
+	total := 0.0
+	count := 0
+	for _, run := range runs {
+		if run.Optimizer != nil {
+			total += run.Optimizer.TotalScore
+			count++
+		}
+	}
+	if count == 0 {
+		return 0
+	}
+	return total / float64(count)
+}
+
+func buildScoreEvolution(week string, runs []*RunData) []RunScoreSnapshot {
+	evolution := make([]RunScoreSnapshot, 0)
+	for _, run := range runs {
+		if run.Optimizer == nil {
+			continue
+		}
+		timestamp := run.Timestamp
+		if timestamp.IsZero() {
+			timestamp = run.Optimizer.Timestamp
+		}
+		evolution = append(evolution, RunScoreSnapshot{
+			RunID:      run.RunID,
+			Week:       week,
+			Timestamp:  timestamp,
+			TotalScore: run.Optimizer.TotalScore,
+		})
+	}
+	sort.Slice(evolution, func(i, j int) bool {
+		if evolution[i].Timestamp.Equal(evolution[j].Timestamp) {
+			return evolution[i].RunID < evolution[j].RunID
+		}
+		return evolution[i].Timestamp.Before(evolution[j].Timestamp)
+	})
+	return evolution
 }
 
 // TrendReport represents a trend analysis across multiple weeks
