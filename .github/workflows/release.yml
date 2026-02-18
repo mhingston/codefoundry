@@ -40,12 +40,17 @@ jobs:
         with:
           go-version: '1.21'
 
+      - name: Download dependencies
+        run: go mod download
+
       - name: Build binary
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
-          go build -ldflags "-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%d)" -o codefoundry-${{ matrix.suffix }}${{ matrix.goos == 'windows' && '.exe' || '' }} ./cmd/codefoundry
+          pwd
+          ls -la
+          go build -v -ldflags "-s -w -X main.version=${{ github.ref_name }} -X main.commit=${{ github.sha }} -X main.date=$(date -u +%Y-%m-%d)" -o codefoundry-${{ matrix.suffix }}${{ matrix.goos == 'windows' && '.exe' || '' }} ./cmd/codefoundry
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
