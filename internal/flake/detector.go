@@ -88,10 +88,10 @@ func (d *Detector) Detect(runID string, replayCount int) (*FlakeReport, error) {
 		if err != nil {
 			report.Failures++
 			report.Results = append(report.Results, &ReplaySummary{
-				ReplayID:    result.ReplayRunID,
+				ReplayID:    fmt.Sprintf("replay-error-%d", i+1),
 				Success:     false,
 				Differences: 0,
-				DurationMs:  result.DurationMs,
+				DurationMs:  0,
 			})
 			continue
 		}

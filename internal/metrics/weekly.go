@@ -131,10 +131,16 @@ func ExtractRunData(runID string, store *artifact.Store) (*RunData, error) {
 	traceData, err := store.Read("_trace", "execution-trace.json")
 	if err == nil {
 		var trace struct {
-			Timestamp string `json:"timestamp"`
+			Timestamp  string `json:"timestamp"`
+			DurationMs int64  `json:"duration_ms"`
 		}
-		if json.Unmarshal(traceData, &trace) == nil && trace.Timestamp != "" {
-			data.Timestamp, _ = time.Parse(time.RFC3339, trace.Timestamp)
+		if json.Unmarshal(traceData, &trace) == nil {
+			if trace.Timestamp != "" {
+				data.Timestamp, _ = time.Parse(time.RFC3339, trace.Timestamp)
+			}
+			if trace.DurationMs > 0 {
+				data.CycleTime = time.Duration(trace.DurationMs) * time.Millisecond
+			}
 		}
 	}
 

@@ -120,6 +120,7 @@ func ReplayMultiple(runID string, runner *stagepkg.Runner, basePath string, coun
 
 	allDifferences := make([]Difference, 0)
 	var totalDuration int64
+	successCount := 0
 
 	for i := 0; i < count; i++ {
 		result, err := Replay(runID, runner, basePath)
@@ -129,6 +130,9 @@ func ReplayMultiple(runID string, runner *stagepkg.Runner, basePath string, coun
 
 		allDifferences = append(allDifferences, result.Differences...)
 		totalDuration += result.DurationMs
+		if result.Matches {
+			successCount++
+		}
 	}
 
 	// Consolidate results
@@ -141,7 +145,7 @@ func ReplayMultiple(runID string, runner *stagepkg.Runner, basePath string, coun
 		Differences:   consolidated,
 		DurationMs:    totalDuration / int64(count),
 		ReplayCount:   count,
-		Determinism:   determinismFromDifferences(consolidated),
+		Determinism:   float64(successCount) / float64(count),
 	}, nil
 }
 
@@ -348,11 +352,4 @@ func ListTraces(basePath string) ([]string, error) {
 	}
 
 	return traces, nil
-}
-
-func determinismFromDifferences(diffs []Difference) float64 {
-	if len(diffs) == 0 {
-		return 1
-	}
-	return 0
 }

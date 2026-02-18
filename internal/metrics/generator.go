@@ -88,13 +88,8 @@ func (g *Generator) GenerateWeekly(week string) (*WeeklyMetrics, error) {
 	// Calculate findings
 	metrics.P1Findings, metrics.P2Findings, metrics.P3Findings = calculateFindings(weekRuns)
 
-	// Calculate average cycle time (placeholder - would need actual timing data)
-	if len(weekRuns) > 0 {
-		metrics.AvgCycleTime = time.Duration(int64(time.Hour) * 2) // Placeholder
-	}
-
-	// Calculate replay pass rate (would need replay data)
-	metrics.ReplayPassRate = metrics.SuccessRate // Placeholder
+	metrics.AvgCycleTime = calculateAvgCycleTime(weekRuns)
+	metrics.ReplayPassRate = calculateReplayPassRate(weekRuns)
 
 	return metrics, nil
 }
@@ -232,6 +227,41 @@ func (g *Generator) discoverRuns() ([]*RunData, error) {
 	}
 
 	return runs, nil
+}
+
+func calculateAvgCycleTime(runs []*RunData) time.Duration {
+	if len(runs) == 0 {
+		return 0
+	}
+	var total time.Duration
+	count := 0
+	for _, run := range runs {
+		if run.CycleTime <= 0 {
+			continue
+		}
+		total += run.CycleTime
+		count++
+	}
+	if count == 0 {
+		return 0
+	}
+	return total / time.Duration(count)
+}
+
+func calculateReplayPassRate(runs []*RunData) float64 {
+	total := 0.0
+	count := 0
+	for _, run := range runs {
+		if run.Optimizer == nil {
+			continue
+		}
+		total += run.Optimizer.Inputs.ReplayDeterminism
+		count++
+	}
+	if count == 0 {
+		return 0
+	}
+	return total / float64(count)
 }
 
 func calculateAvgOptimizerScore(runs []*RunData) float64 {
