@@ -10,11 +10,20 @@ import (
 
 // Protocol represents a workflow protocol definition
 type Protocol struct {
-	Name        string           `yaml:"name" json:"name"`
-	Version     string           `yaml:"version" json:"version"`
-	Description string           `yaml:"description,omitempty" json:"description,omitempty"`
-	Stages      []Stage          `yaml:"stages" json:"stages"`
-	Gates       []GateDefinition `yaml:"gates,omitempty" json:"gates,omitempty"`
+	Name              string             `yaml:"name" json:"name"`
+	Version           string             `yaml:"version" json:"version"`
+	Description       string             `yaml:"description,omitempty" json:"description,omitempty"`
+	Stages            []Stage            `yaml:"stages" json:"stages"`
+	Gates             []GateDefinition   `yaml:"gates,omitempty" json:"gates,omitempty"`
+	ExplorationPolicy *ExplorationPolicy `yaml:"exploration_policy,omitempty" json:"exploration_policy,omitempty"`
+}
+
+// ExplorationPolicy defines guardrails for controlled exploration during execution.
+type ExplorationPolicy struct {
+	MaxVariantAttempts      int      `yaml:"max_variant_attempts,omitempty" json:"max_variant_attempts,omitempty"`
+	AllowedStages           []string `yaml:"allowed_stages,omitempty" json:"allowed_stages,omitempty"`
+	AllowedParameters       []string `yaml:"allowed_parameters,omitempty" json:"allowed_parameters,omitempty"`
+	ForbiddenGateRelaxation []string `yaml:"forbidden_gate_relaxations,omitempty" json:"forbidden_gate_relaxations,omitempty"`
 }
 
 // Stage represents a workflow stage
@@ -182,6 +191,28 @@ func (l *Loader) validateInternalConsistency(p *Protocol) error {
 	for _, stage := range p.Stages {
 		if !validTypes[stage.Type] {
 			return fmt.Errorf("stage '%s' has invalid type: %s", stage.ID, stage.Type)
+		}
+	}
+
+	if p.ExplorationPolicy != nil {
+		if p.ExplorationPolicy.MaxVariantAttempts < 0 {
+			return fmt.Errorf("exploration_policy.max_variant_attempts must be non-negative")
+		}
+
+		for _, stageID := range p.ExplorationPolicy.AllowedStages {
+			if !stageIDs[stageID] {
+				return fmt.Errorf("exploration_policy.allowed_stages references unknown stage: %s", stageID)
+			}
+		}
+
+		for _, gateID := range p.ExplorationPolicy.ForbiddenGateRelaxation {
+			gateDef, err := p.GetGate(gateID)
+			if err != nil {
+				return fmt.Errorf("exploration_policy.forbidden_gate_relaxations references unknown gate: %s", gateID)
+			}
+			if !gateDef.Required {
+				return fmt.Errorf("exploration_policy.forbidden_gate_relaxations must only reference required gates: %s", gateID)
+			}
 		}
 	}
 

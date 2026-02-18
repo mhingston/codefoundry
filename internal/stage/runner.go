@@ -30,11 +30,13 @@ type StageHandler func(ctx context.Context, stage *protocol.Stage, input *StageI
 
 // StageInput contains inputs for stage execution
 type StageInput struct {
-	StageID      string
-	RunID        string
-	Inputs       []string
-	Dependencies []string
-	Artifacts    *artifact.Store
+	StageID           string
+	RunID             string
+	Inputs            []string
+	Dependencies      []string
+	Artifacts         *artifact.Store
+	ExplorationPolicy *protocol.ExplorationPolicy
+	RequiredGateByID  map[string]bool
 }
 
 // StageResult contains the result of stage execution
@@ -198,12 +200,21 @@ func (r *Runner) RunStage(ctx context.Context, stage *protocol.Stage) error {
 	}
 
 	// Build stage input
+	requiredGateByID := make(map[string]bool, len(r.protocolDef.Gates))
+	for _, gateDef := range r.protocolDef.Gates {
+		if gateDef.Required {
+			requiredGateByID[gateDef.ID] = true
+		}
+	}
+
 	input := &StageInput{
-		StageID:      stage.ID,
-		RunID:        r.stateManager.GetRunID(),
-		Inputs:       stage.Inputs,
-		Dependencies: stage.DependsOn,
-		Artifacts:    r.artifactStore,
+		StageID:           stage.ID,
+		RunID:             r.stateManager.GetRunID(),
+		Inputs:            stage.Inputs,
+		Dependencies:      stage.DependsOn,
+		Artifacts:         r.artifactStore,
+		ExplorationPolicy: r.protocolDef.ExplorationPolicy,
+		RequiredGateByID:  requiredGateByID,
 	}
 
 	// Execute based on stage type

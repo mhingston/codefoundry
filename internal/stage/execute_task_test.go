@@ -11,6 +11,9 @@ import (
 	"github.com/mhingston/codefoundry/internal/protocol"
 	"github.com/mhingston/codefoundry/internal/subagent"
 	"github.com/mhingston/codefoundry/internal/worktree"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestExecuteTask(t *testing.T) {
@@ -417,4 +420,60 @@ func TestExecuteTaskResultStorage(t *testing.T) {
 	if !completed["task-001"] {
 		t.Error("expected task to be marked as completed")
 	}
+}
+
+func TestExecuteTaskExplorationPolicyAppliesAllowedOverrides(t *testing.T) {
+	mockWorktree := &MockWorktreeManager{}
+	mockSubagent := &MockSubagentRunner{}
+	mockHooks := &MockHookExecutor{
+		CallFunc: func(hook protocol.Hook, ctx HookContext) (*HookResult, error) {
+			result := &HookResult{Status: "ok", Continue: true, MergeApproved: true}
+			result.Overrides.Limits.MaxTurns = 3
+			result.Overrides.TemplateVars = map[string]string{"mode": "fast", "forbidden": "x"}
+			return result, nil
+		},
+	}
+
+	handler := NewTaskPromptHandlerWithDeps("/tmp/repo", "/tmp/base", mockWorktree, mockSubagent)
+	handler.WithHookExecutor(mockHooks)
+
+	stage := &protocol.Stage{ID: "implement", Type: "task_prompt", Hooks: map[string][]protocol.Hook{"pre_subagent": {{Type: "script", URL: "noop"}}}}
+	input := &StageInput{RunID: "test-run", ExplorationPolicy: &protocol.ExplorationPolicy{MaxVariantAttempts: 1, AllowedStages: []string{"implement"}, AllowedParameters: []string{"limits.max_turns", "template_vars.mode"}}, RequiredGateByID: map[string]bool{"required-gate": true}}
+	task := &protocol.Task{ID: "task-1", Description: "do work", TemplateVars: map[string]string{"seed": "base"}}
+
+	results := make(map[string]*protocol.TaskResult)
+	completed := make(map[string]bool)
+	err := handler.executeTask(context.Background(), stage, input, task, worktree.MergeStrategyFail, results, completed, &sync.Mutex{})
+	require.NoError(t, err)
+	require.Len(t, mockSubagent.SpawnCalls, 1)
+	assert.Equal(t, 3, mockSubagent.SpawnCalls[0].Limits.MaxTurns)
+	assert.Equal(t, "fast", mockSubagent.SpawnCalls[0].TemplateVars["mode"])
+	assert.NotContains(t, mockSubagent.SpawnCalls[0].TemplateVars, "forbidden")
+
+	metadata := results[task.ID].Metadata
+	require.NotNil(t, metadata["exploration_policy_decisions"])
+}
+
+func TestExecuteTaskExplorationPolicyFailsClosedOnRequiredGateRelaxation(t *testing.T) {
+	mockWorktree := &MockWorktreeManager{}
+	mockSubagent := &MockSubagentRunner{}
+	mockHooks := &MockHookExecutor{
+		CallFunc: func(hook protocol.Hook, ctx HookContext) (*HookResult, error) {
+			result := &HookResult{Status: "ok", Continue: true, MergeApproved: true}
+			result.Overrides.GateRelaxations = map[string]bool{"required-gate": true}
+			return result, nil
+		},
+	}
+
+	handler := NewTaskPromptHandlerWithDeps("/tmp/repo", "/tmp/base", mockWorktree, mockSubagent)
+	handler.WithHookExecutor(mockHooks)
+
+	stage := &protocol.Stage{ID: "implement", Type: "task_prompt", Hooks: map[string][]protocol.Hook{"pre_subagent": {{Type: "script", URL: "noop"}}}}
+	input := &StageInput{RunID: "test-run", ExplorationPolicy: &protocol.ExplorationPolicy{MaxVariantAttempts: 1, AllowedStages: []string{"implement"}, AllowedParameters: []string{"limits.max_turns"}, ForbiddenGateRelaxation: []string{"required-gate"}}, RequiredGateByID: map[string]bool{"required-gate": true}}
+	task := &protocol.Task{ID: "task-1", Description: "do work"}
+
+	err := handler.executeTask(context.Background(), stage, input, task, worktree.MergeStrategyFail, map[string]*protocol.TaskResult{}, map[string]bool{}, &sync.Mutex{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "exploration policy blocked")
+	assert.Empty(t, mockSubagent.SpawnCalls)
 }

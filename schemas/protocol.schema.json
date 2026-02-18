@@ -4,7 +4,11 @@
   "title": "CodeFoundry Protocol Schema",
   "description": "Schema for protocol.yaml workflow definitions",
   "type": "object",
-  "required": ["name", "version", "stages"],
+  "required": [
+    "name",
+    "version",
+    "stages"
+  ],
   "properties": {
     "name": {
       "type": "string",
@@ -33,12 +37,20 @@
       "items": {
         "$ref": "#/definitions/gate"
       }
+    },
+    "exploration_policy": {
+      "type": "object",
+      "description": "Policy guardrails for controlled exploration in task execution",
+      "$ref": "#/definitions/exploration_policy"
     }
   },
   "definitions": {
     "stage": {
       "type": "object",
-      "required": ["id", "name"],
+      "required": [
+        "id",
+        "name"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -56,12 +68,18 @@
         "type": {
           "type": "string",
           "description": "Stage type: spec (default, harness executes), decompose (produces tasks), task_prompt (parallel subagents in worktrees), parallel (fan-out), decision (lock/evaluation)",
-          "enum": ["spec", "decompose", "task_prompt", "parallel", "decision"],
+          "enum": [
+            "spec",
+            "decompose",
+            "task_prompt",
+            "parallel",
+            "decision"
+          ],
           "default": "spec"
         },
         "source": {
           "type": "string",
-          "description": "For decompose/task_prompt stages, the stage ID providing the task list (tasks.yaml)"
+          "description": "For decompose/parallel stages, the task source file"
         },
         "parallel": {
           "type": "boolean",
@@ -71,7 +89,11 @@
         "worktree_strategy": {
           "type": "string",
           "description": "Merge strategy for worktrees (task_prompt type only)",
-          "enum": ["fail", "ours", "theirs"],
+          "enum": [
+            "fail",
+            "ours",
+            "theirs"
+          ],
           "default": "fail"
         },
         "max_concurrent": {
@@ -122,35 +144,44 @@
           "properties": {
             "pre_stage": {
               "type": "array",
-              "items": {"$ref": "#/definitions/hook"}
+              "items": {
+                "$ref": "#/definitions/hook"
+              }
             },
             "pre_subagent": {
               "type": "array",
-              "items": {"$ref": "#/definitions/hook"}
+              "items": {
+                "$ref": "#/definitions/hook"
+              }
             },
             "post_subagent": {
               "type": "array",
-              "items": {"$ref": "#/definitions/hook"}
+              "items": {
+                "$ref": "#/definitions/hook"
+              }
             },
             "pre_merge": {
               "type": "array",
-              "items": {"$ref": "#/definitions/hook"}
+              "items": {
+                "$ref": "#/definitions/hook"
+              }
             },
             "post_stage": {
               "type": "array",
-              "items": {"$ref": "#/definitions/hook"}
+              "items": {
+                "$ref": "#/definitions/hook"
+              }
             }
           }
-        },
-        "source": {
-          "type": "string",
-          "description": "For decompose/parallel stages, the task source file"
         }
       }
     },
     "gate": {
       "type": "object",
-      "required": ["id", "command"],
+      "required": [
+        "id",
+        "command"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -185,11 +216,18 @@
     },
     "hook": {
       "type": "object",
-      "required": ["type", "url"],
+      "required": [
+        "type",
+        "url"
+      ],
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["api", "script", "command"],
+          "enum": [
+            "api",
+            "script",
+            "command"
+          ],
           "description": "Hook execution type"
         },
         "url": {
@@ -214,7 +252,9 @@
         "headers": {
           "type": "object",
           "description": "Additional HTTP headers",
-          "additionalProperties": {"type": "string"}
+          "additionalProperties": {
+            "type": "string"
+          }
         },
         "secret": {
           "type": "string",
@@ -223,7 +263,41 @@
         "env": {
           "type": "object",
           "description": "Environment variables (for script/command types)",
-          "additionalProperties": {"type": "string"}
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "exploration_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_variant_attempts": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum number of exploration variant attempts per task"
+        },
+        "allowed_stages": {
+          "type": "array",
+          "description": "Stage IDs where exploration is permitted",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_parameters": {
+          "type": "array",
+          "description": "Task/template parameter keys that exploration can modify",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forbidden_gate_relaxations": {
+          "type": "array",
+          "description": "Gate IDs that can never be relaxed during exploration",
+          "items": {
+            "type": "string"
+          }
         }
       }
     }

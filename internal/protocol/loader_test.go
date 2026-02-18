@@ -268,3 +268,63 @@ gates:
 	assert.Equal(t, 300, testGate.Timeout)
 	assert.True(t, testGate.Required)
 }
+
+func TestLoader_LoadAndValidate_ExplorationPolicyConstraints(t *testing.T) {
+	tmpDir := t.TempDir()
+	protocolPath := filepath.Join(tmpDir, "test.yaml")
+
+	protocolContent := `
+name: "test"
+version: "1.0.0"
+stages:
+  - id: implement
+    name: "Implement"
+gates:
+  - id: required-gate
+    command: "echo ok"
+    required: true
+  - id: optional-gate
+    command: "echo ok"
+    required: false
+exploration_policy:
+  max_variant_attempts: 2
+  allowed_stages: [implement]
+  allowed_parameters: [limits.max_turns, template_vars.mode]
+  forbidden_gate_relaxations: [required-gate]
+`
+	require.NoError(t, os.WriteFile(protocolPath, []byte(protocolContent), 0644))
+
+	loader := NewLoader()
+	protocol, err := loader.LoadAndValidate(protocolPath)
+	require.NoError(t, err)
+	require.NotNil(t, protocol.ExplorationPolicy)
+	assert.Equal(t, 2, protocol.ExplorationPolicy.MaxVariantAttempts)
+	assert.Equal(t, []string{"implement"}, protocol.ExplorationPolicy.AllowedStages)
+}
+
+func TestLoader_LoadAndValidate_ExplorationPolicyInvalidGate(t *testing.T) {
+	tmpDir := t.TempDir()
+	protocolPath := filepath.Join(tmpDir, "test.yaml")
+
+	protocolContent := `
+name: "test"
+version: "1.0.0"
+stages:
+  - id: implement
+    name: "Implement"
+gates:
+  - id: optional-gate
+    command: "echo ok"
+    required: false
+exploration_policy:
+  max_variant_attempts: 1
+  allowed_stages: [implement]
+  forbidden_gate_relaxations: [optional-gate]
+`
+	require.NoError(t, os.WriteFile(protocolPath, []byte(protocolContent), 0644))
+
+	loader := NewLoader()
+	_, err := loader.LoadAndValidate(protocolPath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must only reference required gates")
+}
