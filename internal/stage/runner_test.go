@@ -875,7 +875,9 @@ func TestRunner_RunStage_WithVariants_SelectsDeterministically(t *testing.T) {
 	err := runner.Initialize()
 	require.NoError(t, err)
 
+	variantStageIDs := make(map[string]string)
 	runner.RegisterHandler("spec", func(ctx context.Context, stage *protocol.Stage, input *StageInput) (*StageResult, error) {
+		variantStageIDs[input.VariantID] = stage.ID
 		if input.VariantID == "alpha" {
 			return &StageResult{Status: string(StatusPass), Summary: "ok", Evidence: []string{"a"}}, nil
 		}
@@ -893,4 +895,7 @@ func TestRunner_RunStage_WithVariants_SelectsDeterministically(t *testing.T) {
 	statusData, err := runner.artifactStore.Read("stage1", "status.json")
 	require.NoError(t, err)
 	assert.Contains(t, string(statusData), "variant_selection")
+
+	assert.Equal(t, "stage1/variants/alpha", variantStageIDs["alpha"])
+	assert.Equal(t, "stage1/variants/beta", variantStageIDs["beta"])
 }

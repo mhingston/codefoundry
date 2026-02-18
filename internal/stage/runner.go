@@ -274,12 +274,16 @@ func statusRank(status string) int {
 }
 
 func (r *Runner) runVariants(ctx context.Context, stage *protocol.Stage, input *StageInput) (*StageResult, error) {
+	if len(stage.Variants) == 0 {
+		return nil, fmt.Errorf("no variants declared for stage: %s", stage.ID)
+	}
+
 	scorecards := make([]VariantScorecard, 0, len(stage.Variants))
 	for idx, variant := range stage.Variants {
 		variantNamespace := fmt.Sprintf("%s/variants/%s", stage.ID, variant.ID)
-		variantStageID := fmt.Sprintf("%s__variant__%s", stage.ID, variant.ID)
 
 		variantStage := *stage
+		variantStage.ID = variantNamespace
 		variantStage.Variants = nil
 		if variant.Prompt != "" {
 			variantStage.Description = variant.Prompt
@@ -310,11 +314,13 @@ func (r *Runner) runVariants(ctx context.Context, stage *protocol.Stage, input *
 			EvidenceCount: len(result.Evidence),
 			SummaryLen:    len(result.Summary),
 			Metadata:      result.Metadata,
-			ArtifactStage: variantStageID,
+			ArtifactStage: variantNamespace,
 		}
 		scorecards = append(scorecards, scorecard)
 
-		_ = r.artifactStore.WriteJSON(stage.ID, fmt.Sprintf("variant-%s-scorecard.json", variant.ID), scorecard)
+		if err := r.artifactStore.WriteJSON(stage.ID, fmt.Sprintf("variant-%s-scorecard.json", variant.ID), scorecard); err != nil {
+			return nil, fmt.Errorf("failed to write scorecard for variant '%s': %w", variant.ID, err)
+		}
 	}
 
 	sort.Slice(scorecards, func(i, j int) bool {
