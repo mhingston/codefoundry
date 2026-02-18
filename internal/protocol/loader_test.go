@@ -268,3 +268,50 @@ gates:
 	assert.Equal(t, 300, testGate.Timeout)
 	assert.True(t, testGate.Required)
 }
+
+func TestLoader_LoadAndValidate_Variants(t *testing.T) {
+	tmpDir := t.TempDir()
+	protocolPath := filepath.Join(tmpDir, "test.yaml")
+
+	protocolContent := `
+name: "test"
+version: "1.0.0"
+stages:
+  - id: stage1
+    name: "Stage 1"
+    variants:
+      - id: baseline
+        prompt: "baseline"
+      - id: aggressive
+        prompt: "aggressive"
+`
+	require.NoError(t, os.WriteFile(protocolPath, []byte(protocolContent), 0644))
+
+	loader := NewLoader()
+	p, err := loader.LoadAndValidate(protocolPath)
+	require.NoError(t, err)
+	require.Len(t, p.Stages, 1)
+	assert.Len(t, p.Stages[0].Variants, 2)
+}
+
+func TestLoader_LoadAndValidate_DuplicateVariantID(t *testing.T) {
+	tmpDir := t.TempDir()
+	protocolPath := filepath.Join(tmpDir, "test.yaml")
+
+	protocolContent := `
+name: "test"
+version: "1.0.0"
+stages:
+  - id: stage1
+    name: "Stage 1"
+    variants:
+      - id: same
+      - id: same
+`
+	require.NoError(t, os.WriteFile(protocolPath, []byte(protocolContent), 0644))
+
+	loader := NewLoader()
+	_, err := loader.LoadAndValidate(protocolPath)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "duplicate variant id")
+}

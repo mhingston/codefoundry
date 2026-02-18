@@ -25,11 +25,12 @@ const (
 
 // StageStatus represents a stage's status
 type StageStatus struct {
-	StageID     string    `json:"stage_id"`
-	Status      string    `json:"status"`
-	StartedAt   time.Time `json:"started_at,omitempty"`
-	CompletedAt time.Time `json:"completed_at,omitempty"`
-	Duration    string    `json:"duration,omitempty"`
+	StageID     string                 `json:"stage_id"`
+	Status      string                 `json:"status"`
+	StartedAt   time.Time              `json:"started_at,omitempty"`
+	CompletedAt time.Time              `json:"completed_at,omitempty"`
+	Duration    string                 `json:"duration,omitempty"`
+	Metadata    map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // Report contains all evidence for a run
@@ -116,6 +117,9 @@ func (g *Generator) GenerateReport(runID string, format ReportFormat) (*Report, 
 			}
 			if !stageReport.StartedAt.IsZero() && !stageReport.CompletedAt.IsZero() {
 				stageReport.Duration = stageReport.CompletedAt.Sub(stageReport.StartedAt).String()
+			}
+			if len(status.Metadata) > 0 {
+				stageReport.Metadata = status.Metadata
 			}
 		}
 
@@ -283,11 +287,12 @@ func (g *Generator) loadStageStatus(stageID string) (*stageStatusJSON, error) {
 
 // stageStatusJSON represents the stage status file structure
 type stageStatusJSON struct {
-	SchemaVersion string `json:"schema_version"`
-	StageID       string `json:"stage_id"`
-	Status        string `json:"status"`
-	StartedAt     string `json:"started_at,omitempty"`
-	CompletedAt   string `json:"completed_at,omitempty"`
+	SchemaVersion string                 `json:"schema_version"`
+	StageID       string                 `json:"stage_id"`
+	Status        string                 `json:"status"`
+	StartedAt     string                 `json:"started_at,omitempty"`
+	CompletedAt   string                 `json:"completed_at,omitempty"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // calculateOverallStatus calculates the overall run status

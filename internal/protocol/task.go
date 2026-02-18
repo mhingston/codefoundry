@@ -17,6 +17,14 @@ type Task struct {
 	Dependencies       []string          `yaml:"dependencies,omitempty" json:"dependencies,omitempty"`
 	EstimatedEffort    string            `yaml:"estimated_effort,omitempty" json:"estimated_effort,omitempty"`
 	TemplateVars       map[string]string `yaml:"template_vars,omitempty" json:"template_vars,omitempty"`
+	Variants           []TaskVariant     `yaml:"variants,omitempty" json:"variants,omitempty"`
+}
+
+// TaskVariant defines optional deterministic prompt/tooling variation for a task.
+type TaskVariant struct {
+	ID           string            `yaml:"id" json:"id"`
+	Prompt       string            `yaml:"prompt,omitempty" json:"prompt,omitempty"`
+	TemplateVars map[string]string `yaml:"template_vars,omitempty" json:"template_vars,omitempty"`
 }
 
 // TasksFile represents the structure of a tasks.yaml file
@@ -235,6 +243,19 @@ func ValidateTask(task *Task) error {
 
 	if task.Description == "" {
 		return fmt.Errorf("task '%s': description is required", task.ID)
+	}
+
+	if len(task.Variants) > 0 {
+		seen := make(map[string]struct{}, len(task.Variants))
+		for i, variant := range task.Variants {
+			if variant.ID == "" {
+				return fmt.Errorf("task '%s': variant at index %d missing id", task.ID, i)
+			}
+			if _, ok := seen[variant.ID]; ok {
+				return fmt.Errorf("task '%s': duplicate variant id '%s'", task.ID, variant.ID)
+			}
+			seen[variant.ID] = struct{}{}
+		}
 	}
 
 	// Validate estimated_effort if provided

@@ -34,6 +34,17 @@ type Stage struct {
 	Gates            []string          `yaml:"gates,omitempty" json:"gates,omitempty"`
 	Condition        string            `yaml:"condition,omitempty" json:"condition,omitempty"`
 	Hooks            map[string][]Hook `yaml:"hooks,omitempty" json:"hooks,omitempty"`
+	Variants         []Variant         `yaml:"variants,omitempty" json:"variants,omitempty"`
+}
+
+// Variant represents a deterministic stage variant configuration.
+type Variant struct {
+	ID            string            `yaml:"id" json:"id"`
+	Name          string            `yaml:"name,omitempty" json:"name,omitempty"`
+	Description   string            `yaml:"description,omitempty" json:"description,omitempty"`
+	Prompt        string            `yaml:"prompt,omitempty" json:"prompt,omitempty"`
+	TemplateVars  map[string]string `yaml:"template_vars,omitempty" json:"template_vars,omitempty"`
+	GateOverrides map[string]string `yaml:"gate_overrides,omitempty" json:"gate_overrides,omitempty"`
 }
 
 // GateDefinition represents a gate definition
@@ -182,6 +193,10 @@ func (l *Loader) validateInternalConsistency(p *Protocol) error {
 	for _, stage := range p.Stages {
 		if !validTypes[stage.Type] {
 			return fmt.Errorf("stage '%s' has invalid type: %s", stage.ID, stage.Type)
+		}
+
+		if err := ValidateVariantBlock(stage.Variants); err != nil {
+			return fmt.Errorf("stage '%s' has invalid variants: %w", stage.ID, err)
 		}
 	}
 

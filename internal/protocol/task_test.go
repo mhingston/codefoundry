@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -509,5 +510,42 @@ func TestCreateTasksFile(t *testing.T) {
 
 	if len(tasksFile.Tasks) != 1 {
 		t.Errorf("expected 1 task, got %d", len(tasksFile.Tasks))
+	}
+}
+
+func TestValidateTask_Variants(t *testing.T) {
+	task := &Task{
+		ID:          "task-1",
+		Title:       "Task",
+		Description: "desc",
+		Variants: []TaskVariant{
+			{ID: "baseline"},
+			{ID: "focused"},
+		},
+	}
+
+	err := ValidateTask(task)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+}
+
+func TestValidateTask_DuplicateVariantID(t *testing.T) {
+	task := &Task{
+		ID:          "task-1",
+		Title:       "Task",
+		Description: "desc",
+		Variants: []TaskVariant{
+			{ID: "same"},
+			{ID: "same"},
+		},
+	}
+
+	err := ValidateTask(task)
+	if err == nil {
+		t.Fatalf("expected error")
+	}
+	if got := err.Error(); !strings.Contains(got, "duplicate variant id") {
+		t.Fatalf("expected duplicate variant id error, got %s", got)
 	}
 }

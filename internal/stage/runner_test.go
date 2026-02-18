@@ -862,3 +862,35 @@ func TestRunner_RunFrom_StartStageNotFound(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "start stage not found")
 }
+
+func TestRunner_RunStage_WithVariants_SelectsDeterministically(t *testing.T) {
+	tmpDir := t.TempDir()
+	p := createTestProtocol(t)
+	p.Stages[0].Variants = []protocol.Variant{
+		{ID: "alpha"},
+		{ID: "beta"},
+	}
+
+	runner := NewRunner(p, tmpDir)
+	err := runner.Initialize()
+	require.NoError(t, err)
+
+	runner.RegisterHandler("spec", func(ctx context.Context, stage *protocol.Stage, input *StageInput) (*StageResult, error) {
+		if input.VariantID == "alpha" {
+			return &StageResult{Status: string(StatusPass), Summary: "ok", Evidence: []string{"a"}}, nil
+		}
+		return &StageResult{Status: string(StatusPass), Summary: "ok", Evidence: []string{"a", "b"}}, nil
+	})
+
+	stage, _ := p.GetStage("stage1")
+	err = runner.RunStage(context.Background(), stage)
+	require.NoError(t, err)
+
+	data, err := runner.artifactStore.Read("stage1", "variant-selection.json")
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "\"selected_variant\": \"beta\"")
+
+	statusData, err := runner.artifactStore.Read("stage1", "status.json")
+	require.NoError(t, err)
+	assert.Contains(t, string(statusData), "variant_selection")
+}

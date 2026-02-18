@@ -75,6 +75,26 @@ func (v *Validator) ValidateProtocol(protocol *Protocol, schemaPath string) erro
 	return v.Validate(schemaPath, protocol)
 }
 
+// ValidateVariantBlock validates optional variant definitions under deterministic constraints.
+func ValidateVariantBlock(variants []Variant) error {
+	if len(variants) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(variants))
+	for i, variant := range variants {
+		if variant.ID == "" {
+			return fmt.Errorf("variant at index %d is missing required id", i)
+		}
+		if _, ok := seen[variant.ID]; ok {
+			return fmt.Errorf("duplicate variant id: %s", variant.ID)
+		}
+		seen[variant.ID] = struct{}{}
+	}
+
+	return nil
+}
+
 // ValidationError represents a validation error with details
 type ValidationError struct {
 	Errors []string

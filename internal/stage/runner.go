@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"github.com/mhingston/codefoundry/internal/artifact"
@@ -30,11 +31,13 @@ type StageHandler func(ctx context.Context, stage *protocol.Stage, input *StageI
 
 // StageInput contains inputs for stage execution
 type StageInput struct {
-	StageID      string
-	RunID        string
-	Inputs       []string
-	Dependencies []string
-	Artifacts    *artifact.Store
+	StageID          string
+	RunID            string
+	Inputs           []string
+	Dependencies     []string
+	Artifacts        *artifact.Store
+	VariantID        string
+	VariantNamespace string
 }
 
 // StageResult contains the result of stage execution
@@ -210,12 +213,16 @@ func (r *Runner) RunStage(ctx context.Context, stage *protocol.Stage) error {
 	var result *StageResult
 	var execErr error
 
-	handler, hasHandler := r.handlers[stage.Type]
-	if hasHandler {
-		result, execErr = handler(ctx, stage, input)
+	if len(stage.Variants) > 0 {
+		result, execErr = r.runVariants(ctx, stage, input)
 	} else {
-		// Default execution
-		result, execErr = r.executeDefault(ctx, stage, input)
+		handler, hasHandler := r.handlers[stage.Type]
+		if hasHandler {
+			result, execErr = handler(ctx, stage, input)
+		} else {
+			// Default execution
+			result, execErr = r.executeDefault(ctx, stage, input)
+		}
 	}
 
 	if execErr != nil {
@@ -232,6 +239,7 @@ func (r *Runner) RunStage(ctx context.Context, stage *protocol.Stage) error {
 	status.Status = result.Status
 	status.Summary = result.Summary
 	status.Evidence = result.Evidence
+	status.Metadata = result.Metadata
 	status.CompletedAt = time.Now().UTC().Format(time.RFC3339)
 
 	if err := r.artifactStore.WriteJSON(stage.ID, "status.json", status); err != nil {
@@ -250,6 +258,108 @@ func (r *Runner) RunStage(ctx context.Context, stage *protocol.Stage) error {
 	}
 
 	return nil
+}
+
+func statusRank(status string) int {
+	switch status {
+	case string(StatusPass):
+		return 3
+	case string(StatusSkipped):
+		return 2
+	case string(StatusRunning):
+		return 1
+	default:
+		return 0
+	}
+}
+
+func (r *Runner) runVariants(ctx context.Context, stage *protocol.Stage, input *StageInput) (*StageResult, error) {
+	scorecards := make([]VariantScorecard, 0, len(stage.Variants))
+	for idx, variant := range stage.Variants {
+		variantNamespace := fmt.Sprintf("%s/variants/%s", stage.ID, variant.ID)
+		variantStageID := fmt.Sprintf("%s__variant__%s", stage.ID, variant.ID)
+
+		variantStage := *stage
+		variantStage.Variants = nil
+		if variant.Prompt != "" {
+			variantStage.Description = variant.Prompt
+		}
+
+		variantInput := *input
+		variantInput.VariantID = variant.ID
+		variantInput.VariantNamespace = variantNamespace
+
+		handler, hasHandler := r.handlers[stage.Type]
+		var result *StageResult
+		var execErr error
+		if hasHandler {
+			result, execErr = handler(ctx, &variantStage, &variantInput)
+		} else {
+			result, execErr = r.executeDefault(ctx, &variantStage, &variantInput)
+		}
+		if execErr != nil {
+			return nil, fmt.Errorf("variant '%s' failed to execute: %w", variant.ID, execErr)
+		}
+
+		scorecard := VariantScorecard{
+			VariantID:     variant.ID,
+			VariantIndex:  idx,
+			Status:        result.Status,
+			Summary:       result.Summary,
+			StatusRank:    statusRank(result.Status),
+			EvidenceCount: len(result.Evidence),
+			SummaryLen:    len(result.Summary),
+			Metadata:      result.Metadata,
+			ArtifactStage: variantStageID,
+		}
+		scorecards = append(scorecards, scorecard)
+
+		_ = r.artifactStore.WriteJSON(stage.ID, fmt.Sprintf("variant-%s-scorecard.json", variant.ID), scorecard)
+	}
+
+	sort.Slice(scorecards, func(i, j int) bool {
+		left := scorecards[i]
+		right := scorecards[j]
+		if left.StatusRank != right.StatusRank {
+			return left.StatusRank > right.StatusRank
+		}
+		if left.EvidenceCount != right.EvidenceCount {
+			return left.EvidenceCount > right.EvidenceCount
+		}
+		if left.SummaryLen != right.SummaryLen {
+			return left.SummaryLen > right.SummaryLen
+		}
+		return left.VariantID < right.VariantID
+	})
+
+	selected := scorecards[0]
+	rationale := []string{
+		"highest status_rank wins",
+		"then highest evidence_count",
+		"then longest summary_len",
+		"then lexical variant_id",
+	}
+	selection := VariantSelection{
+		SchemaVersion:   "codefoundry_variant_selection.v1",
+		StageID:         stage.ID,
+		SelectedVariant: selected.VariantID,
+		Rationale:       rationale,
+		Scorecards:      scorecards,
+	}
+	if err := r.artifactStore.WriteJSON(stage.ID, "variant-selection.json", selection); err != nil {
+		return nil, fmt.Errorf("failed to write variant selection artifact: %w", err)
+	}
+
+	metadata := map[string]interface{}{
+		"variant_selection": selection,
+	}
+	return &StageResult{
+		Status:   selected.Status,
+		Summary:  fmt.Sprintf("Selected variant %s for stage %s", selected.VariantID, stage.ID),
+		Outputs:  stage.Outputs,
+		Evidence: []string{"variant-selection.json"},
+		Metadata: metadata,
+	}, nil
 }
 
 // executeDefault handles default stage execution
@@ -366,6 +476,28 @@ func (r *Runner) CompleteStage(stageID string, artifacts map[string][]byte) erro
 
 	// Complete stage
 	return r.stateManager.CompleteStage(stageID, StatusPass, "Manually completed")
+}
+
+// VariantScorecard captures deterministic scoring data for a variant execution.
+type VariantScorecard struct {
+	VariantID     string                 `json:"variant_id"`
+	VariantIndex  int                    `json:"variant_index"`
+	Status        string                 `json:"status"`
+	Summary       string                 `json:"summary,omitempty"`
+	StatusRank    int                    `json:"status_rank"`
+	EvidenceCount int                    `json:"evidence_count"`
+	SummaryLen    int                    `json:"summary_len"`
+	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	ArtifactStage string                 `json:"artifact_stage"`
+}
+
+// VariantSelection records winner and rationale for replayability.
+type VariantSelection struct {
+	SchemaVersion   string             `json:"schema_version"`
+	StageID         string             `json:"stage_id"`
+	SelectedVariant string             `json:"selected_variant"`
+	Rationale       []string           `json:"rationale"`
+	Scorecards      []VariantScorecard `json:"scorecards"`
 }
 
 // StageStatus represents a stage status

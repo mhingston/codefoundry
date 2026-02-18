@@ -939,3 +939,41 @@ func TestGenerator_GenerateReport_WrongSchemaVersion(t *testing.T) {
 		t.Errorf("GateReports count = %v, want 1", len(report.GateReports))
 	}
 }
+
+func TestGenerateReport_IncludesStageMetadata(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "report-test-*")
+	if err != nil {
+		t.Fatalf("failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	ns := artifact.NewNamespace(tmpDir, "test-run")
+	store := artifact.NewStore(ns)
+
+	status := map[string]interface{}{
+		"schema_version": "codefoundry_stage_status.v1",
+		"stage_id":       "test-stage",
+		"status":         "pass",
+		"metadata": map[string]interface{}{
+			"variant_selection": map[string]interface{}{"selected_variant": "beta"},
+		},
+	}
+	if err := store.WriteJSON("test-stage", "status.json", status); err != nil {
+		t.Fatalf("failed to write status: %v", err)
+	}
+
+	generator := NewGenerator(store, tmpDir)
+	report, err := generator.GenerateReport("test-run", FormatJSON)
+	if err != nil {
+		t.Fatalf("GenerateReport failed: %v", err)
+	}
+	if len(report.Stages) != 1 {
+		t.Fatalf("expected 1 stage, got %d", len(report.Stages))
+	}
+	if report.Stages[0].Metadata == nil {
+		t.Fatalf("expected stage metadata to be present")
+	}
+	if _, ok := report.Stages[0].Metadata["variant_selection"]; !ok {
+		t.Fatalf("expected variant_selection in metadata")
+	}
+}
