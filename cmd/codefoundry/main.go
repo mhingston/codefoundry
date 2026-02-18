@@ -50,12 +50,13 @@ to external harnesses (opencode, codex, claude, copilot, etc.).`,
 }
 
 var (
-	basePath     string
-	protocolPath string
-	stageID      string
-	artifactPath string
-	forceFlag    bool
-	verboseFlag  bool
+	basePath      string
+	protocolPath  string
+	stageID       string
+	artifactPath  string
+	candidatePath string
+	forceFlag     bool
+	verboseFlag   bool
 )
 
 func init() {
@@ -86,6 +87,7 @@ func init() {
 	replayCmd.AddCommand(replayRecordCmd)
 	replayCmd.AddCommand(replayVerifyCmd)
 	replayCmd.AddCommand(replayListCmd)
+	replayCmd.AddCommand(replayCounterfactualCmd)
 
 	// Flake command subcommands
 	flakeCmd.AddCommand(flakeDetectCmd)
@@ -141,6 +143,8 @@ func init() {
 	// Replay command flags
 	replayRecordCmd.Flags().BoolP("enable", "e", true, "Enable recording mode")
 	replayVerifyCmd.Flags().IntP("replays", "n", 1, "Number of replays")
+	replayCounterfactualCmd.Flags().StringVar(&candidatePath, "candidate", "", "Path to candidate YAML/JSON parameter file")
+	_ = replayCounterfactualCmd.MarkFlagRequired("candidate")
 
 	// Flake detection command flags
 	flakeDetectCmd.Flags().IntP("replays", "n", 5, "Number of replays (default: 5)")
@@ -925,6 +929,46 @@ var replayListCmd = &cobra.Command{
 		fmt.Printf("Execution traces (%d):\n", len(traces))
 		for _, trace := range traces {
 			fmt.Printf("  - %s\n", trace)
+		}
+
+		return nil
+	},
+}
+
+var replayCounterfactualCmd = &cobra.Command{
+	Use:   "counterfactual",
+	Short: "Replay historical runs against candidate parameter changes",
+	Long:  `Evaluate candidate protocol/harness parameters without changing production defaults.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		candidate, err := replay.LoadCandidateConfig(candidatePath)
+		if err != nil {
+			return fmt.Errorf("failed to load candidate: %w", err)
+		}
+
+		report, err := replay.AnalyzeCounterfactual(basePath, candidate)
+		if err != nil {
+			return fmt.Errorf("counterfactual replay failed: %w", err)
+		}
+
+		fmt.Printf("Counterfactual Analysis: %s\n", report.Candidate.Name)
+		if report.Candidate.Description != "" {
+			fmt.Printf("  Description: %s\n", report.Candidate.Description)
+		}
+		fmt.Printf("  Runs analyzed: %d (with replay data: %d)\n", report.RunsAnalyzed, report.RunsWithReplayData)
+
+		fmt.Printf("\nDeltas (candidate - baseline):\n")
+		fmt.Printf("  Score: %+0.3f (95%% CI: %+0.3f..%+0.3f)\n",
+			report.Deltas.ScoreDelta.Mean, report.Deltas.ScoreDelta.Lower, report.Deltas.ScoreDelta.Upper)
+		fmt.Printf("  Gate pass rate: %+0.3f (95%% CI: %+0.3f..%+0.3f)\n",
+			report.Deltas.GateDelta.Mean, report.Deltas.GateDelta.Lower, report.Deltas.GateDelta.Upper)
+		fmt.Printf("  Flake rate: %+0.3f (95%% CI: %+0.3f..%+0.3f)\n",
+			report.Deltas.FlakeDelta.Mean, report.Deltas.FlakeDelta.Lower, report.Deltas.FlakeDelta.Upper)
+
+		fmt.Printf("\nAdoption recommendation: %s\n", strings.ToUpper(report.Recommendation))
+		fmt.Printf("  %s\n", report.Rationale)
+
+		if report.Recommendation == "reject" {
+			return fmt.Errorf("candidate rejected by historical evidence")
 		}
 
 		return nil
