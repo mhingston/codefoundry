@@ -52,10 +52,12 @@ type CounterfactualReport struct {
 }
 
 type runSnapshot struct {
-	score     float64
-	gateRate  float64
-	flakeRate float64
-	hasReplay bool
+	score            float64
+	gateRate         float64
+	flakeRate        float64
+	confidenceScore  float64
+	confidenceTarget float64
+	hasReplay        bool
 }
 
 // LoadCandidateConfig parses a candidate file in YAML or JSON.
@@ -87,7 +89,27 @@ func LoadCandidateConfig(path string) (*CandidateConfig, error) {
 	if candidate.MinimumRuns <= 0 {
 		candidate.MinimumRuns = 10
 	}
+
+	if err := validateCandidateConfig(candidate); err != nil {
+		return nil, err
+	}
 	return candidate, nil
+}
+
+func validateCandidateConfig(candidate *CandidateConfig) error {
+	if candidate.ScoreMultiplier < 0 {
+		return fmt.Errorf("score_multiplier must be >= 0")
+	}
+	if candidate.GatePassDelta < -1 || candidate.GatePassDelta > 1 {
+		return fmt.Errorf("gate_pass_delta must be between -1 and 1")
+	}
+	if candidate.FlakeRateDelta < -1 || candidate.FlakeRateDelta > 1 {
+		return fmt.Errorf("flake_rate_delta must be between -1 and 1")
+	}
+	if candidate.ConfidenceThresholdDelta < -1 || candidate.ConfidenceThresholdDelta > 1 {
+		return fmt.Errorf("confidence_threshold_delta must be between -1 and 1")
+	}
+	return nil
 }
 
 // AnalyzeCounterfactual replays historical runs against candidate parameter changes.
@@ -114,6 +136,10 @@ func AnalyzeCounterfactual(basePath string, candidate *CandidateConfig) (*Counte
 			candidateFlake = clamp01(snap.flakeRate + candidate.FlakeRateDelta)
 		}
 
+		baselineMargin := snap.confidenceScore - snap.confidenceTarget
+		candidateMargin := snap.confidenceScore - clamp01(snap.confidenceTarget+candidate.ConfidenceThresholdDelta)
+		confidenceDelta := candidateMargin - baselineMargin
+
 		scoreDelta := candidateScore - snap.score
 		gateDelta := candidateGate - snap.gateRate
 		flakeDelta := candidateFlake - snap.flakeRate
@@ -121,7 +147,7 @@ func AnalyzeCounterfactual(basePath string, candidate *CandidateConfig) (*Counte
 		scoreDeltas = append(scoreDeltas, scoreDelta)
 		gateDeltas = append(gateDeltas, gateDelta)
 		flakeDeltas = append(flakeDeltas, flakeDelta)
-		adoptionSignals = append(adoptionSignals, scoreDelta+gateDelta-flakeDelta)
+		adoptionSignals = append(adoptionSignals, scoreDelta+gateDelta-flakeDelta+confidenceDelta)
 	}
 
 	report := &CounterfactualReport{
@@ -157,9 +183,12 @@ func collectHistoricalSnapshots(basePath string) ([]runSnapshot, int, error) {
 			continue
 		}
 
+		confidenceScore, confidenceTarget := extractConfidence(runData)
 		snap := runSnapshot{
-			score:    extractScore(runData),
-			gateRate: extractGateRate(runData),
+			score:            extractScore(runData),
+			gateRate:         extractGateRate(runData),
+			confidenceScore:  confidenceScore,
+			confidenceTarget: confidenceTarget,
 		}
 
 		if replayResult, err := LoadReplayResult(store); err == nil {
@@ -178,6 +207,13 @@ func extractScore(runData *metrics.RunData) float64 {
 		return 0
 	}
 	return clamp01(float64(runData.ReviewResult.RubricScore) / 100.0)
+}
+
+func extractConfidence(runData *metrics.RunData) (float64, float64) {
+	if runData == nil || runData.ReviewResult == nil {
+		return 0, 0.7
+	}
+	return clamp01(runData.ReviewResult.ConfidenceScore), clamp01(runData.ReviewResult.ConfidenceThreshold)
 }
 
 func extractGateRate(runData *metrics.RunData) float64 {

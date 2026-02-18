@@ -968,7 +968,7 @@ var replayCounterfactualCmd = &cobra.Command{
 		fmt.Printf("  %s\n", report.Rationale)
 
 		if report.Recommendation == "reject" {
-			return fmt.Errorf("candidate rejected by historical evidence")
+			fmt.Println("  Candidate remains non-adopted; no production defaults changed.")
 		}
 
 		return nil
