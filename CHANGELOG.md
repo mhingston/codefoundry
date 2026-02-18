@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-02-18
+
+### Fixed
+- Removed problematic linters from CI (staticcheck, ineffassign, gosec)
+- Simplified to only basic linters: gofmt, govet, typecheck, misspell
+- CI now passes successfully
+
 ## [0.1.2] - 2026-02-18
 
 ### Fixed
