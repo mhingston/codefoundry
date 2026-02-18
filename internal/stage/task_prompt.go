@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 
 	"github.com/mhingston/codefoundry/internal/protocol"
@@ -147,13 +148,27 @@ func (h *TaskPromptHandler) Execute(ctx context.Context, stage *protocol.Stage, 
 	// Build result
 	summary := fmt.Sprintf("Completed %d tasks in %d waves", len(tasksFile.Tasks), len(waves))
 
+	policyByTask := map[string]interface{}{}
+	taskIDs := make([]string, 0, len(results))
+	for taskID := range results {
+		taskIDs = append(taskIDs, taskID)
+	}
+	sort.Strings(taskIDs)
+	for _, taskID := range taskIDs {
+		if decisions, ok := results[taskID].Metadata["exploration_policy_decisions"]; ok {
+			policyByTask[taskID] = decisions
+		}
+	}
+
 	return &StageResult{
 		Status:  string(StatusPass),
 		Summary: summary,
 		Outputs: stage.Outputs,
 		Metadata: map[string]interface{}{
-			"tasks_completed": len(results),
-			"waves":           len(waves),
+			"tasks_completed":              len(results),
+			"waves":                        len(waves),
+			"exploration_policy_snapshot":  input.ExplorationPolicy,
+			"exploration_policy_decisions": policyByTask,
 		},
 	}, nil
 }
@@ -276,7 +291,13 @@ func containsString(items []string, target string) bool {
 	return false
 }
 
-func applyExplorationOverrides(baseLimits subagent.Limits, baseTemplateVars map[string]string, override HookResult, policy *protocol.ExplorationPolicy, stageID string, requiredGateByID map[string]bool) (subagent.Limits, map[string]string, policyDecision, error) {
+func hasOverrides(result HookResult) bool {
+	return result.Overrides.Limits != (subagent.Limits{}) ||
+		len(result.Overrides.TemplateVars) > 0 ||
+		len(result.Overrides.GateRelaxations) > 0
+}
+
+func applyExplorationOverrides(baseLimits subagent.Limits, baseTemplateVars map[string]string, override HookResult, policy *protocol.ExplorationPolicy, stageID string, requiredGateByID, allGateByID map[string]bool) (subagent.Limits, map[string]string, policyDecision, error) {
 	limits := baseLimits
 	templateVars := map[string]string{}
 	for k, v := range baseTemplateVars {
@@ -301,6 +322,11 @@ func applyExplorationOverrides(baseLimits subagent.Limits, baseTemplateVars map[
 		for gateID, relax := range override.Overrides.GateRelaxations {
 			if !relax {
 				continue
+			}
+			if !allGateByID[gateID] {
+				decision.Ambiguous = true
+				decision.Reason = "unknown gate in relaxation request; fail-closed"
+				return limits, templateVars, decision, fmt.Errorf("unknown gate in relaxation request: %s", gateID)
 			}
 			if requiredGateByID[gateID] || containsString(policy.ForbiddenGateRelaxation, gateID) {
 				decision.GateRelaxationBlock = append(decision.GateRelaxationBlock, gateID)
@@ -403,7 +429,8 @@ func (h *TaskPromptHandler) executeTask(
 	for k, v := range task.TemplateVars {
 		templateVars[k] = v
 	}
-	policyDecisions := []policyDecision{}
+	policyDecisions := []policyDecision{evaluatePolicy(input.ExplorationPolicy, stage.ID)}
+	variantAttempts := 0
 
 	// Call pre_subagent hook if configured
 	if stage.Hooks != nil && len(stage.Hooks["pre_subagent"]) > 0 {
@@ -415,7 +442,7 @@ func (h *TaskPromptHandler) executeTask(
 					StageType: stage.Type,
 					Task:      task,
 					Worktree:  wt,
-					Limits:    subagent.DefaultLimits(),
+					Limits:    limits,
 				}
 
 				result, err := h.hookExecutor.Call(hook, hookCtx)
@@ -427,7 +454,14 @@ func (h *TaskPromptHandler) executeTask(
 					return fmt.Errorf("pre_subagent hook blocked task %s: %s", task.ID, result.Reason)
 				}
 
-				updatedLimits, updatedTemplateVars, decision, applyErr := applyExplorationOverrides(limits, templateVars, *result, input.ExplorationPolicy, stage.ID, input.RequiredGateByID)
+				if hasOverrides(*result) {
+					variantAttempts++
+					if input.ExplorationPolicy == nil || variantAttempts > input.ExplorationPolicy.MaxVariantAttempts {
+						return fmt.Errorf("pre_subagent exploration policy blocked task %s: max variant attempts exceeded or policy missing", task.ID)
+					}
+				}
+
+				updatedLimits, updatedTemplateVars, decision, applyErr := applyExplorationOverrides(limits, templateVars, *result, input.ExplorationPolicy, stage.ID, input.RequiredGateByID, input.AllGateByID)
 				policyDecisions = append(policyDecisions, decision)
 				if applyErr != nil {
 					return fmt.Errorf("pre_subagent exploration policy blocked task %s: %w", task.ID, applyErr)

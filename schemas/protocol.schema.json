@@ -39,9 +39,8 @@
       }
     },
     "exploration_policy": {
-      "type": "object",
-      "description": "Policy guardrails for controlled exploration in task execution",
-      "$ref": "#/definitions/exploration_policy"
+      "$ref": "#/definitions/exploration_policy",
+      "description": "Policy guardrails for controlled exploration in task execution"
     }
   },
   "definitions": {

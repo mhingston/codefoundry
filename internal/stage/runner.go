@@ -37,6 +37,7 @@ type StageInput struct {
 	Artifacts         *artifact.Store
 	ExplorationPolicy *protocol.ExplorationPolicy
 	RequiredGateByID  map[string]bool
+	AllGateByID       map[string]bool
 }
 
 // StageResult contains the result of stage execution
@@ -201,7 +202,9 @@ func (r *Runner) RunStage(ctx context.Context, stage *protocol.Stage) error {
 
 	// Build stage input
 	requiredGateByID := make(map[string]bool, len(r.protocolDef.Gates))
+	allGateByID := make(map[string]bool, len(r.protocolDef.Gates))
 	for _, gateDef := range r.protocolDef.Gates {
+		allGateByID[gateDef.ID] = true
 		if gateDef.Required {
 			requiredGateByID[gateDef.ID] = true
 		}
@@ -215,6 +218,7 @@ func (r *Runner) RunStage(ctx context.Context, stage *protocol.Stage) error {
 		Artifacts:         r.artifactStore,
 		ExplorationPolicy: r.protocolDef.ExplorationPolicy,
 		RequiredGateByID:  requiredGateByID,
+		AllGateByID:       allGateByID,
 	}
 
 	// Execute based on stage type
