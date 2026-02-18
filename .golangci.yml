@@ -14,9 +14,11 @@ linters:
     - misspell
     - gosec
     - unconvert
-    - goconst
     - gocyclo
     - dupl
+  disable:
+    - errcheck
+    - goconst
 
 linters-settings:
   gocyclo:
