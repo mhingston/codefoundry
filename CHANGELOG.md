@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-02-17
+
+### Fixed
+- Fixed GitHub Actions release workflow
+- Added `go mod download` step before build
+- Added debug output to diagnose build issues
+
 ## [0.1.0] - 2026-02-17
 
 ### Added
