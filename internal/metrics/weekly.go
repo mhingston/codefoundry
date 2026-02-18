@@ -3,6 +3,7 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,19 +20,30 @@ import (
 
 // WeeklyMetrics represents metrics for a single week
 type WeeklyMetrics struct {
-	Week           string        `json:"week"` // ISO week format: 2026-W08
-	SuccessRate    float64       `json:"success_rate"`
-	AvgConfidence  float64       `json:"avg_confidence"`
-	AvgRubricScore int           `json:"avg_rubric_score"`
-	AvgCycleTime   time.Duration `json:"avg_cycle_time"`
-	P1Findings     int           `json:"p1_findings"`
-	P2Findings     int           `json:"p2_findings"`
-	P3Findings     int           `json:"p3_findings"`
-	GatePassRate   float64       `json:"gate_pass_rate"`
-	ReplayPassRate float64       `json:"replay_pass_rate"`
-	RunsCompleted  int           `json:"runs_completed"`
-	RunsFailed     int           `json:"runs_failed"`
-	TotalRuns      int           `json:"total_runs"`
+	Week                  string             `json:"week"` // ISO week format: 2026-W08
+	SuccessRate           float64            `json:"success_rate"`
+	SuccessRateConfidence BinomialConfidence `json:"success_rate_confidence"`
+	AvgConfidence         float64            `json:"avg_confidence"`
+	AvgRubricScore        int                `json:"avg_rubric_score"`
+	AvgCycleTime          time.Duration      `json:"avg_cycle_time"`
+	P1Findings            int                `json:"p1_findings"`
+	P2Findings            int                `json:"p2_findings"`
+	P3Findings            int                `json:"p3_findings"`
+	GatePassRate          float64            `json:"gate_pass_rate"`
+	ReplayPassRate        float64            `json:"replay_pass_rate"`
+	DeterminismConfidence BinomialConfidence `json:"determinism_confidence"`
+	RunsCompleted         int                `json:"runs_completed"`
+	RunsFailed            int                `json:"runs_failed"`
+	TotalRuns             int                `json:"total_runs"`
+}
+
+// BinomialConfidence stores a Wilson confidence band for ratio-based metrics.
+type BinomialConfidence struct {
+	Successes int     `json:"successes"`
+	Samples   int     `json:"samples"`
+	Lower     float64 `json:"lower"`
+	Upper     float64 `json:"upper"`
+	Level     float64 `json:"level"`
 }
 
 // GetISOWeek returns the ISO week string (e.g., "2026-W08")
@@ -101,6 +113,8 @@ type RunData struct {
 	RunID        string
 	Timestamp    time.Time
 	Success      bool
+	ReplayPassed bool
+	HasReplay    bool
 	ReviewResult *review.ReviewResult
 	LockDecision *lock.LockDecision
 	GateResults  []gate.GateResult
@@ -146,7 +160,84 @@ func ExtractRunData(runID string, store *artifact.Store) (*RunData, error) {
 	// Load gate results
 	data.GateResults = loadGateResults(store)
 
+	// Derive cycle time from stage status artifacts.
+	data.CycleTime = calculateCycleTime(store)
+
+	// Load replay result for determinism metrics.
+	data.HasReplay, data.ReplayPassed = loadReplayStatus(store)
+
 	return data, nil
+}
+
+func calculateCycleTime(store *artifact.Store) time.Duration {
+	type stageStatus struct {
+		StartedAt   string `json:"started_at"`
+		CompletedAt string `json:"completed_at"`
+	}
+
+	entries, err := os.ReadDir(store.Namespace().RunPath())
+	if err != nil {
+		return 0
+	}
+
+	var earliestStart *time.Time
+	var latestEnd *time.Time
+
+	for _, entry := range entries {
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), "_") {
+			continue
+		}
+
+		data, err := store.Read(entry.Name(), "status.json")
+		if err != nil {
+			continue
+		}
+
+		var status stageStatus
+		if err := json.Unmarshal(data, &status); err != nil {
+			continue
+		}
+
+		if status.StartedAt != "" {
+			if startedAt, err := time.Parse(time.RFC3339, status.StartedAt); err == nil {
+				if earliestStart == nil || startedAt.Before(*earliestStart) {
+					earliestStart = &startedAt
+				}
+			}
+		}
+
+		if status.CompletedAt != "" {
+			if completedAt, err := time.Parse(time.RFC3339, status.CompletedAt); err == nil {
+				if latestEnd == nil || completedAt.After(*latestEnd) {
+					latestEnd = &completedAt
+				}
+			}
+		}
+	}
+
+	if earliestStart == nil || latestEnd == nil || latestEnd.Before(*earliestStart) {
+		return 0
+	}
+
+	return latestEnd.Sub(*earliestStart)
+}
+
+func loadReplayStatus(store *artifact.Store) (hasReplay bool, replayPassed bool) {
+	type replayStatus struct {
+		Matches bool `json:"matches"`
+	}
+
+	data, err := store.Read("_replay", "replay-result.json")
+	if err != nil {
+		return false, false
+	}
+
+	var status replayStatus
+	if err := json.Unmarshal(data, &status); err != nil {
+		return false, false
+	}
+
+	return true, status.Matches
 }
 
 // loadGateResults loads all gate results from a run
@@ -284,6 +375,74 @@ func calculateGatePassRate(runs []*RunData) float64 {
 	}
 
 	return float64(passedGates) / float64(totalGates)
+}
+
+func calculateAvgCycleTime(runs []*RunData) time.Duration {
+	if len(runs) == 0 {
+		return 0
+	}
+
+	var total time.Duration
+	count := 0
+	for _, run := range runs {
+		if run.CycleTime <= 0 {
+			continue
+		}
+		total += run.CycleTime
+		count++
+	}
+
+	if count == 0 {
+		return 0
+	}
+
+	return total / time.Duration(count)
+}
+
+func calculateReplayPassRate(runs []*RunData) (passRate float64, successes int, samples int) {
+	for _, run := range runs {
+		if !run.HasReplay {
+			continue
+		}
+		samples++
+		if run.ReplayPassed {
+			successes++
+		}
+	}
+
+	if samples == 0 {
+		return 0, 0, 0
+	}
+
+	return float64(successes) / float64(samples), successes, samples
+}
+
+func calculateBinomialConfidence(successes, samples int, level float64) BinomialConfidence {
+	band := BinomialConfidence{
+		Successes: successes,
+		Samples:   samples,
+		Level:     level,
+	}
+	if samples == 0 {
+		return band
+	}
+
+	// Wilson score interval with z=1.96 for 95% confidence.
+	z := 1.96
+	if level != 0.95 {
+		z = 1.96
+	}
+
+	n := float64(samples)
+	p := float64(successes) / n
+	z2 := z * z
+	denominator := 1 + z2/n
+	center := (p + z2/(2*n)) / denominator
+	margin := (z / denominator) * math.Sqrt((p*(1-p)/n)+(z2/(4*n*n)))
+
+	band.Lower = math.Max(0, center-margin)
+	band.Upper = math.Min(1, center+margin)
+	return band
 }
 
 // filterRunsByWeek filters runs to only those within a specific week

@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/mhingston/codefoundry/internal/artifact"
 )
@@ -71,13 +70,16 @@ func (g *Generator) GenerateWeekly(week string) (*WeeklyMetrics, error) {
 	// Calculate findings
 	metrics.P1Findings, metrics.P2Findings, metrics.P3Findings = calculateFindings(weekRuns)
 
-	// Calculate average cycle time (placeholder - would need actual timing data)
-	if len(weekRuns) > 0 {
-		metrics.AvgCycleTime = time.Duration(int64(time.Hour) * 2) // Placeholder
-	}
+	// Calculate artifact-backed aggregate metrics.
+	metrics.AvgCycleTime = calculateAvgCycleTime(weekRuns)
+	metrics.ReplayPassRate, metrics.DeterminismConfidence.Successes, metrics.DeterminismConfidence.Samples = calculateReplayPassRate(weekRuns)
 
-	// Calculate replay pass rate (would need replay data)
-	metrics.ReplayPassRate = metrics.SuccessRate // Placeholder
+	metrics.SuccessRateConfidence = calculateBinomialConfidence(metrics.RunsCompleted, metrics.TotalRuns, 0.95)
+	metrics.DeterminismConfidence = calculateBinomialConfidence(
+		metrics.DeterminismConfidence.Successes,
+		metrics.DeterminismConfidence.Samples,
+		0.95,
+	)
 
 	return metrics, nil
 }
