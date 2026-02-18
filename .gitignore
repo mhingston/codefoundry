@@ -1,5 +1,5 @@
 # Binaries
-codefoundry
+/codefoundry
 build/
 dist/
 
