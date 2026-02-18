@@ -72,12 +72,13 @@ func (g *Generator) GenerateWeekly(week string) (*WeeklyMetrics, error) {
 
 	// Calculate artifact-backed aggregate metrics.
 	metrics.AvgCycleTime = calculateAvgCycleTime(weekRuns)
-	metrics.ReplayPassRate, metrics.DeterminismConfidence.Successes, metrics.DeterminismConfidence.Samples = calculateReplayPassRate(weekRuns)
+	replayPassRate, replaySuccesses, replaySamples := calculateReplayPassRate(weekRuns)
+	metrics.ReplayPassRate = replayPassRate
 
 	metrics.SuccessRateConfidence = calculateBinomialConfidence(metrics.RunsCompleted, metrics.TotalRuns, 0.95)
 	metrics.DeterminismConfidence = calculateBinomialConfidence(
-		metrics.DeterminismConfidence.Successes,
-		metrics.DeterminismConfidence.Samples,
+		replaySuccesses,
+		replaySamples,
 		0.95,
 	)
 
