@@ -51,12 +51,12 @@ func (g *Generator) GenerateWeekly(week string) (*WeeklyMetrics, error) {
 
 	// Generate metrics
 	metrics := &WeeklyMetrics{
-		Week:          week,
-		SuccessRate:   calculateSuccessRate(weekRuns),
-		AvgConfidence: calculateAvgConfidence(weekRuns),
+		Week:           week,
+		SuccessRate:    calculateSuccessRate(weekRuns),
+		AvgConfidence:  calculateAvgConfidence(weekRuns),
 		AvgRubricScore: calculateAvgRubricScore(weekRuns),
-		GatePassRate:  calculateGatePassRate(weekRuns),
-		TotalRuns:     len(weekRuns),
+		GatePassRate:   calculateGatePassRate(weekRuns),
+		TotalRuns:      len(weekRuns),
 	}
 
 	// Calculate runs completed/failed

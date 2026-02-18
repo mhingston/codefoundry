@@ -20,25 +20,25 @@ const (
 
 // IsolationConfig contains isolation configuration
 type IsolationConfig struct {
-	Level           IsolationLevel
-	PreventNetwork  bool
-	PreventWrite    bool
-	ResourceLimits  *ResourceLimits
+	Level          IsolationLevel
+	PreventNetwork bool
+	PreventWrite   bool
+	ResourceLimits *ResourceLimits
 }
 
 // ResourceLimits defines resource constraints
 type ResourceLimits struct {
-	MaxMemoryMB int
+	MaxMemoryMB   int
 	MaxCPUPercent int
-	MaxDiskMB int
+	MaxDiskMB     int
 }
 
 // IsolationGuarantee represents an isolation promise
 type IsolationGuarantee struct {
-	WorktreeID      string
-	Level           IsolationLevel
-	Guarantees      []string
-	Enforced        bool
+	WorktreeID string
+	Level      IsolationLevel
+	Guarantees []string
+	Enforced   bool
 }
 
 // GetIsolationLevel returns the isolation level for a string
@@ -176,9 +176,9 @@ func (m *Manager) VerifyIsolation(worktreeID string) (*IsolationVerification, er
 	}
 
 	verification := &IsolationVerification{
-		WorktreeID:  worktreeID,
-		Checks:      make(map[string]bool),
-		Passed:      true,
+		WorktreeID: worktreeID,
+		Checks:     make(map[string]bool),
+		Passed:     true,
 	}
 
 	// Check worktree directory exists and is separate

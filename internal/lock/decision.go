@@ -10,21 +10,21 @@ import (
 
 // LockDecision represents the final lock stage decision
 type LockDecision struct {
-	SchemaVersion       string   `json:"schema_version"`
-	Decision            string   `json:"decision"`             // resolved|reopen
-	Reason              string   `json:"reason"`
-	RequiredGateIDs     []string `json:"required_gate_ids"`
-	PassedGateIDs       []string `json:"passed_gate_ids"`
-	FailedGateIDs       []string `json:"failed_gate_ids"`
-	ConfidenceScore     float64  `json:"confidence_score"`
-	ConfidenceThreshold float64  `json:"confidence_threshold"`
-	P1Findings          int      `json:"p1_findings"`
-	P2Findings          int      `json:"p2_findings"`
-	P3Findings          int      `json:"p3_findings"`
-	RubricScore         int      `json:"rubric_score"`
-	EscalationRequired  bool     `json:"escalation_required"`
-	EscalationReason    string   `json:"escalation_reason,omitempty"`
-	Timestamp           string   `json:"timestamp"`
+	SchemaVersion       string                 `json:"schema_version"`
+	Decision            string                 `json:"decision"` // resolved|reopen
+	Reason              string                 `json:"reason"`
+	RequiredGateIDs     []string               `json:"required_gate_ids"`
+	PassedGateIDs       []string               `json:"passed_gate_ids"`
+	FailedGateIDs       []string               `json:"failed_gate_ids"`
+	ConfidenceScore     float64                `json:"confidence_score"`
+	ConfidenceThreshold float64                `json:"confidence_threshold"`
+	P1Findings          int                    `json:"p1_findings"`
+	P2Findings          int                    `json:"p2_findings"`
+	P3Findings          int                    `json:"p3_findings"`
+	RubricScore         int                    `json:"rubric_score"`
+	EscalationRequired  bool                   `json:"escalation_required"`
+	EscalationReason    string                 `json:"escalation_reason,omitempty"`
+	Timestamp           string                 `json:"timestamp"`
 	Metadata            map[string]interface{} `json:"metadata,omitempty"`
 }
 

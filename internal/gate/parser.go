@@ -76,7 +76,7 @@ func (p *Parser) parseGoVetOutput(stdout, stderr string) []GateFailure {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		// Match: file.go:123:4: message
 		if matches := p.patterns["go_error"].FindStringSubmatch(line); len(matches) >= 5 {
 			lineNum, _ := strconv.Atoi(matches[2])
@@ -100,7 +100,7 @@ func (p *Parser) parseGoTestOutput(stdout, stderr string) []GateFailure {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		// Match test failures
 		if strings.HasPrefix(line, "--- FAIL:") {
 			failures = append(failures, GateFailure{
@@ -108,7 +108,7 @@ func (p *Parser) parseGoTestOutput(stdout, stderr string) []GateFailure {
 				Severity: "error",
 			})
 		}
-		
+
 		// Match assertion failures with file info
 		if matches := p.patterns["go_test"].FindStringSubmatch(line); len(matches) >= 4 {
 			lineNum, _ := strconv.Atoi(matches[2])
@@ -127,7 +127,7 @@ func (p *Parser) parseGoTestOutput(stdout, stderr string) []GateFailure {
 // parseGoFmtOutput parses Go fmt output
 func (p *Parser) parseGoFmtOutput(stdout, stderr string) []GateFailure {
 	failures := []GateFailure{}
-	
+
 	// gofmt outputs files that need formatting, one per line
 	scanner := bufio.NewScanner(strings.NewReader(stdout))
 	for scanner.Scan() {
@@ -135,7 +135,7 @@ func (p *Parser) parseGoFmtOutput(stdout, stderr string) []GateFailure {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		
+
 		// Each line is a file that needs formatting
 		failures = append(failures, GateFailure{
 			File:     strings.TrimSpace(line),
@@ -155,7 +155,7 @@ func (p *Parser) parseGenericOutput(stdout, stderr string) []GateFailure {
 	scanner := bufio.NewScanner(strings.NewReader(output))
 	for scanner.Scan() {
 		line := scanner.Text()
-		
+
 		// Try line_error pattern
 		if matches := p.patterns["line_error"].FindStringSubmatch(line); len(matches) >= 4 {
 			lineNum, _ := strconv.Atoi(matches[2])
@@ -167,7 +167,7 @@ func (p *Parser) parseGenericOutput(stdout, stderr string) []GateFailure {
 			})
 			continue
 		}
-		
+
 		// Look for error keywords
 		if containsError(line) {
 			failures = append(failures, GateFailure{
@@ -184,13 +184,13 @@ func (p *Parser) parseGenericOutput(stdout, stderr string) []GateFailure {
 func containsError(line string) bool {
 	keywords := []string{"error:", "ERROR:", "failed:", "FAILED:", "fail:", "FAIL:"}
 	lower := strings.ToLower(line)
-	
+
 	for _, keyword := range keywords {
 		if strings.Contains(lower, keyword) {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -235,11 +235,11 @@ func (f *FailureFormatter) Summary(failures []GateFailure) string {
 	if len(failures) == 0 {
 		return "No failures"
 	}
-	
+
 	if len(failures) == 1 {
 		return f.Format(failures[0])
 	}
-	
+
 	return fmt.Sprintf("%d failures found", len(failures))
 }
 
@@ -249,7 +249,7 @@ func (p *Parser) AddPattern(name, pattern string) error {
 	if err != nil {
 		return fmt.Errorf("invalid pattern: %w", err)
 	}
-	
+
 	p.patterns[name] = re
 	return nil
 }
@@ -260,18 +260,18 @@ func (p *Parser) ParseWithPattern(output, patternName string) []GateFailure {
 	if !exists {
 		return []GateFailure{}
 	}
-	
+
 	failures := []GateFailure{}
 	scanner := bufio.NewScanner(strings.NewReader(output))
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		if matches := pattern.FindStringSubmatch(line); len(matches) > 0 {
 			failure := GateFailure{
-				Message: matches[len(matches)-1],
+				Message:  matches[len(matches)-1],
 				Severity: "error",
 			}
-			
+
 			// Try to extract file and line if available
 			if len(matches) >= 3 {
 				failure.File = matches[1]
@@ -279,11 +279,11 @@ func (p *Parser) ParseWithPattern(output, patternName string) []GateFailure {
 					failure.Line = lineNum
 				}
 			}
-			
+
 			failures = append(failures, failure)
 		}
 	}
-	
+
 	return failures
 }
 
@@ -294,7 +294,7 @@ func CountBySeverity(failures []GateFailure) map[string]int {
 		"warning": 0,
 		"info":    0,
 	}
-	
+
 	for _, failure := range failures {
 		severity := failure.Severity
 		if severity == "" {
@@ -302,7 +302,7 @@ func CountBySeverity(failures []GateFailure) map[string]int {
 		}
 		counts[severity]++
 	}
-	
+
 	return counts
 }
 

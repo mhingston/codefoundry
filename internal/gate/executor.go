@@ -23,16 +23,16 @@ type Executor struct {
 
 // GateResult represents the result of gate execution
 type GateResult struct {
-	SchemaVersion string          `json:"schema_version"`
-	GateID        string          `json:"gate_id"`
-	Status        string          `json:"status"`
-	Command       string          `json:"command"`
-	ExitCode      int             `json:"exit_code,omitempty"`
-	DurationMs    int64           `json:"duration_ms,omitempty"`
-	Stdout        string          `json:"stdout,omitempty"`
-	Stderr        string          `json:"stderr,omitempty"`
-	Failures      []GateFailure   `json:"failures,omitempty"`
-	Timestamp     string          `json:"timestamp"`
+	SchemaVersion string                 `json:"schema_version"`
+	GateID        string                 `json:"gate_id"`
+	Status        string                 `json:"status"`
+	Command       string                 `json:"command"`
+	ExitCode      int                    `json:"exit_code,omitempty"`
+	DurationMs    int64                  `json:"duration_ms,omitempty"`
+	Stdout        string                 `json:"stdout,omitempty"`
+	Stderr        string                 `json:"stderr,omitempty"`
+	Failures      []GateFailure          `json:"failures,omitempty"`
+	Timestamp     string                 `json:"timestamp"`
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -54,7 +54,7 @@ func NewExecutor(artifactStore *artifact.Store) *Executor {
 // Execute runs a single gate
 func (e *Executor) Execute(ctx context.Context, gateDef *protocol.GateDefinition, workingDir string) (*GateResult, error) {
 	start := time.Now()
-	
+
 	result := &GateResult{
 		SchemaVersion: "codefoundry_gate_report.v1",
 		GateID:        gateDef.ID,
@@ -141,23 +141,23 @@ func (e *Executor) ExecuteAndStore(ctx context.Context, gateDef *protocol.GateDe
 // ExecuteGates runs multiple gates for a stage
 func (e *Executor) ExecuteGates(ctx context.Context, gates []protocol.GateDefinition, workingDir, stageID string) (*GateExecutionResult, error) {
 	result := &GateExecutionResult{
-		StageID:      stageID,
-		Results:      make([]*GateResult, 0, len(gates)),
-		PassedGates:  []string{},
-		FailedGates:  []string{},
-		StartTime:    time.Now().UTC(),
+		StageID:     stageID,
+		Results:     make([]*GateResult, 0, len(gates)),
+		PassedGates: []string{},
+		FailedGates: []string{},
+		StartTime:   time.Now().UTC(),
 	}
 
 	for i := range gates {
 		gateDef := &gates[i]
-		
+
 		gateResult, err := e.ExecuteAndStore(ctx, gateDef, workingDir, stageID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute gate %s: %w", gateDef.ID, err)
 		}
 
 		result.Results = append(result.Results, gateResult)
-		
+
 		if gateResult.Status == "pass" {
 			result.PassedGates = append(result.PassedGates, gateDef.ID)
 		} else {
@@ -187,7 +187,7 @@ func (e *Executor) parseFailures(gateID, stdout, stderr string) []GateFailure {
 	// Otherwise, try common error formats
 	output := stdout + stderr
 	scanner := bufio.NewScanner(strings.NewReader(output))
-	
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		failure := e.parseFailureLine(gateID, line)
@@ -204,15 +204,15 @@ func (e *Executor) parseFailureLine(gateID, line string) *GateFailure {
 	// Common patterns: file.go:123: error message
 	//                 file.go:123:5: error message
 	//                 file.go(123): error message
-	
+
 	parts := strings.SplitN(line, ":", 3)
 	if len(parts) >= 2 {
 		file := strings.TrimSpace(parts[0])
-		
+
 		// Try to parse line number
 		var lineNum int
 		fmt.Sscanf(parts[1], "%d", &lineNum)
-		
+
 		message := ""
 		if len(parts) >= 3 {
 			message = strings.TrimSpace(parts[2])
@@ -230,8 +230,8 @@ func (e *Executor) parseFailureLine(gateID, line string) *GateFailure {
 	}
 
 	// Fallback: treat the whole line as a message if it looks like an error
-	if strings.Contains(strings.ToLower(line), "error") || 
-	   strings.Contains(strings.ToLower(line), "fail") {
+	if strings.Contains(strings.ToLower(line), "error") ||
+		strings.Contains(strings.ToLower(line), "fail") {
 		return &GateFailure{
 			Message:  strings.TrimSpace(line),
 			Severity: "error",
@@ -243,13 +243,13 @@ func (e *Executor) parseFailureLine(gateID, line string) *GateFailure {
 
 // GateExecutionResult contains results for all gates in a stage
 type GateExecutionResult struct {
-	StageID      string         `json:"stage_id"`
-	Results      []*GateResult  `json:"results"`
-	PassedGates  []string       `json:"passed_gates"`
-	FailedGates  []string       `json:"failed_gates"`
-	AllPassed    bool           `json:"all_passed"`
-	StartTime    time.Time      `json:"start_time"`
-	EndTime      time.Time      `json:"end_time"`
+	StageID     string        `json:"stage_id"`
+	Results     []*GateResult `json:"results"`
+	PassedGates []string      `json:"passed_gates"`
+	FailedGates []string      `json:"failed_gates"`
+	AllPassed   bool          `json:"all_passed"`
+	StartTime   time.Time     `json:"start_time"`
+	EndTime     time.Time     `json:"end_time"`
 }
 
 // Duration returns the total duration
@@ -279,26 +279,26 @@ func (r *GateExecutionResult) GetFailedRequiredGates(gates []protocol.GateDefini
 // ValidateGateDefinitions validates a list of gate definitions
 func ValidateGateDefinitions(gates []protocol.GateDefinition) error {
 	gateIDs := make(map[string]bool)
-	
+
 	for _, gate := range gates {
 		if gate.ID == "" {
 			return fmt.Errorf("gate ID cannot be empty")
 		}
-		
+
 		if gateIDs[gate.ID] {
 			return fmt.Errorf("duplicate gate ID: %s", gate.ID)
 		}
 		gateIDs[gate.ID] = true
-		
+
 		if gate.Command == "" {
 			return fmt.Errorf("gate %s has no command", gate.ID)
 		}
-		
+
 		if gate.Timeout < 0 {
 			return fmt.Errorf("gate %s has invalid timeout: %d", gate.ID, gate.Timeout)
 		}
 	}
-	
+
 	return nil
 }
 

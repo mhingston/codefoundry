@@ -179,14 +179,14 @@ func TestPositionToLineCol(t *testing.T) {
 	content := "line1\nline2\nline3"
 
 	tests := []struct {
-		pos         int
-		wantLine    int
-		wantColumn  int
+		pos        int
+		wantLine   int
+		wantColumn int
 	}{
-		{0, 1, 1},   // Start of first line
-		{6, 2, 1},   // Start of second line
-		{7, 2, 2},   // Second char of second line
-		{12, 3, 1},  // Start of third line
+		{0, 1, 1},  // Start of first line
+		{6, 2, 1},  // Start of second line
+		{7, 2, 2},  // Second char of second line
+		{12, 3, 1}, // Start of third line
 	}
 
 	for _, tt := range tests {

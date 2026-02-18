@@ -9,10 +9,10 @@ import (
 
 func TestValidateMergeStrategy(t *testing.T) {
 	tests := []struct {
-		name      string
-		strategy  string
-		want      MergeStrategy
-		wantErr   bool
+		name     string
+		strategy string
+		want     MergeStrategy
+		wantErr  bool
 	}{
 		{
 			name:     "fail strategy",
@@ -399,7 +399,7 @@ func TestMergeInvalidStrategy(t *testing.T) {
 	// The invalid strategy handling happens during conflict resolution
 	// With no conflicts, it may succeed, so we test the error handling path directly
 	result, err := m.Merge(worktree.ID, MergeStrategy("invalid"))
-	
+
 	// With no conflicts, invalid strategy might not be detected until there's a conflict
 	// So we check if result is non-nil
 	if result == nil {
@@ -890,8 +890,6 @@ func TestCanAutoMerge(t *testing.T) {
 		t.Error("CanAutoMerge() = false, want true for no changes")
 	}
 }
-
-
 
 func TestCanAutoMergeInvalidWorktree(t *testing.T) {
 	tmpDir := t.TempDir()

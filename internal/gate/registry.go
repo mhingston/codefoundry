@@ -9,8 +9,8 @@ import (
 
 // Registry manages gate definitions
 type Registry struct {
-	gates   map[string]*protocol.GateDefinition
-	mutex   sync.RWMutex
+	gates map[string]*protocol.GateDefinition
+	mutex sync.RWMutex
 }
 
 // NewRegistry creates a new gate registry
@@ -23,12 +23,12 @@ func NewRegistry() *Registry {
 // NewRegistryFromProtocol creates a registry from a protocol
 func NewRegistryFromProtocol(p *protocol.Protocol) *Registry {
 	registry := NewRegistry()
-	
+
 	for i := range p.Gates {
 		gate := &p.Gates[i]
 		registry.Register(gate)
 	}
-	
+
 	return registry
 }
 
@@ -36,20 +36,20 @@ func NewRegistryFromProtocol(p *protocol.Protocol) *Registry {
 func (r *Registry) Register(gate *protocol.GateDefinition) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	
+
 	if gate.ID == "" {
 		return fmt.Errorf("gate ID cannot be empty")
 	}
-	
+
 	if _, exists := r.gates[gate.ID]; exists {
 		return fmt.Errorf("gate already registered: %s", gate.ID)
 	}
-	
+
 	// Apply defaults
 	if gate.Timeout == 0 {
 		gate.Timeout = 300 // 5 minutes default
 	}
-	
+
 	r.gates[gate.ID] = gate
 	return nil
 }
@@ -58,11 +58,11 @@ func (r *Registry) Register(gate *protocol.GateDefinition) error {
 func (r *Registry) Unregister(gateID string) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	
+
 	if _, exists := r.gates[gateID]; !exists {
 		return fmt.Errorf("gate not found: %s", gateID)
 	}
-	
+
 	delete(r.gates, gateID)
 	return nil
 }
@@ -71,12 +71,12 @@ func (r *Registry) Unregister(gateID string) error {
 func (r *Registry) Get(gateID string) (*protocol.GateDefinition, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	gate, exists := r.gates[gateID]
 	if !exists {
 		return nil, fmt.Errorf("gate not found: %s", gateID)
 	}
-	
+
 	// Return a copy to prevent external modification
 	gateCopy := *gate
 	return &gateCopy, nil
@@ -95,7 +95,7 @@ func (r *Registry) MustGet(gateID string) *protocol.GateDefinition {
 func (r *Registry) Exists(gateID string) bool {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	_, exists := r.gates[gateID]
 	return exists
 }
@@ -104,12 +104,12 @@ func (r *Registry) Exists(gateID string) bool {
 func (r *Registry) List() []string {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	ids := make([]string, 0, len(r.gates))
 	for id := range r.gates {
 		ids = append(ids, id)
 	}
-	
+
 	return ids
 }
 
@@ -117,13 +117,13 @@ func (r *Registry) List() []string {
 func (r *Registry) ListAll() []*protocol.GateDefinition {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	gates := make([]*protocol.GateDefinition, 0, len(r.gates))
 	for _, gate := range r.gates {
 		gateCopy := *gate
 		gates = append(gates, &gateCopy)
 	}
-	
+
 	return gates
 }
 
@@ -131,7 +131,7 @@ func (r *Registry) ListAll() []*protocol.GateDefinition {
 func (r *Registry) GetRequired() []*protocol.GateDefinition {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	required := make([]*protocol.GateDefinition, 0)
 	for _, gate := range r.gates {
 		if gate.Required {
@@ -139,7 +139,7 @@ func (r *Registry) GetRequired() []*protocol.GateDefinition {
 			required = append(required, &gateCopy)
 		}
 	}
-	
+
 	return required
 }
 
@@ -147,7 +147,7 @@ func (r *Registry) GetRequired() []*protocol.GateDefinition {
 func (r *Registry) GetOptional() []*protocol.GateDefinition {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	optional := make([]*protocol.GateDefinition, 0)
 	for _, gate := range r.gates {
 		if !gate.Required {
@@ -155,7 +155,7 @@ func (r *Registry) GetOptional() []*protocol.GateDefinition {
 			optional = append(optional, &gateCopy)
 		}
 	}
-	
+
 	return optional
 }
 
@@ -163,7 +163,7 @@ func (r *Registry) GetOptional() []*protocol.GateDefinition {
 func (r *Registry) Count() int {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	return len(r.gates)
 }
 
@@ -171,7 +171,7 @@ func (r *Registry) Count() int {
 func (r *Registry) Clear() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	
+
 	r.gates = make(map[string]*protocol.GateDefinition)
 }
 
@@ -183,7 +183,7 @@ func (r *Registry) LoadFromProtocol(p *protocol.Protocol) error {
 			return fmt.Errorf("failed to register gate %s: %w", gate.ID, err)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -200,7 +200,7 @@ func (r *Registry) ValidateGates(gateIDs []string) error {
 // GetGatesForStage returns gate definitions for a stage
 func (r *Registry) GetGatesForStage(stage *protocol.Stage) ([]*protocol.GateDefinition, error) {
 	gates := make([]*protocol.GateDefinition, 0, len(stage.Gates))
-	
+
 	for _, gateID := range stage.Gates {
 		gate, err := r.Get(gateID)
 		if err != nil {
@@ -208,22 +208,22 @@ func (r *Registry) GetGatesForStage(stage *protocol.Stage) ([]*protocol.GateDefi
 		}
 		gates = append(gates, gate)
 	}
-	
+
 	return gates, nil
 }
 
 // Clone creates a deep copy of the registry
 func (r *Registry) Clone() *Registry {
 	newRegistry := NewRegistry()
-	
+
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	for _, gate := range r.gates {
 		gateCopy := *gate
 		newRegistry.Register(&gateCopy)
 	}
-	
+
 	return newRegistry
 }
 
@@ -231,7 +231,7 @@ func (r *Registry) Clone() *Registry {
 func (r *Registry) Merge(other *Registry) error {
 	other.mutex.RLock()
 	defer other.mutex.RUnlock()
-	
+
 	for _, gate := range other.gates {
 		if r.Exists(gate.ID) {
 			return fmt.Errorf("gate collision: %s", gate.ID)
@@ -240,7 +240,7 @@ func (r *Registry) Merge(other *Registry) error {
 			return err
 		}
 	}
-	
+
 	return nil
 }
 
@@ -251,7 +251,7 @@ type GateFilter func(*protocol.GateDefinition) bool
 func (r *Registry) Filter(filter GateFilter) []*protocol.GateDefinition {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	filtered := make([]*protocol.GateDefinition, 0)
 	for _, gate := range r.gates {
 		if filter(gate) {
@@ -259,7 +259,7 @@ func (r *Registry) Filter(filter GateFilter) []*protocol.GateDefinition {
 			filtered = append(filtered, &gateCopy)
 		}
 	}
-	
+
 	return filtered
 }
 
@@ -267,12 +267,12 @@ func (r *Registry) Filter(filter GateFilter) []*protocol.GateDefinition {
 func (r *Registry) Update(gateID string, updates func(*protocol.GateDefinition)) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
-	
+
 	gate, exists := r.gates[gateID]
 	if !exists {
 		return fmt.Errorf("gate not found: %s", gateID)
 	}
-	
+
 	updates(gate)
 	return nil
 }
@@ -281,7 +281,7 @@ func (r *Registry) Update(gateID string, updates func(*protocol.GateDefinition))
 func (r *Registry) GetByCommand(command string) []*protocol.GateDefinition {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
-	
+
 	matches := make([]*protocol.GateDefinition, 0)
 	for _, gate := range r.gates {
 		if gate.Command == command {
@@ -289,14 +289,14 @@ func (r *Registry) GetByCommand(command string) []*protocol.GateDefinition {
 			matches = append(matches, &gateCopy)
 		}
 	}
-	
+
 	return matches
 }
 
 // GetDefaultRegistry returns a registry with common gates
 func GetDefaultRegistry() *Registry {
 	registry := NewRegistry()
-	
+
 	// Common gates
 	registry.Register(&protocol.GateDefinition{
 		ID:       "go-vet",
@@ -305,7 +305,7 @@ func GetDefaultRegistry() *Registry {
 		Required: true,
 		Timeout:  60,
 	})
-	
+
 	registry.Register(&protocol.GateDefinition{
 		ID:       "go-test",
 		Name:     "Go Test",
@@ -313,7 +313,7 @@ func GetDefaultRegistry() *Registry {
 		Required: true,
 		Timeout:  300,
 	})
-	
+
 	registry.Register(&protocol.GateDefinition{
 		ID:       "go-fmt",
 		Name:     "Go Format",
@@ -321,6 +321,6 @@ func GetDefaultRegistry() *Registry {
 		Required: false,
 		Timeout:  30,
 	})
-	
+
 	return registry
 }

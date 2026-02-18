@@ -138,7 +138,7 @@ func GenerateAnnotations(findings []Finding) []string {
 
 		annotation := fmt.Sprintf("::%s file=%s,line=%d::%s",
 			level, finding.File, finding.Line, finding.Message)
-		
+
 		annotations = append(annotations, annotation)
 	}
 
@@ -279,8 +279,6 @@ func formatBranches(branches []string) string {
 	}
 	return sb.String()
 }
-
-
 
 // GenerateWorkflowFile generates a complete workflow file with proper formatting
 func GenerateWorkflowFile(config GitHubConfig) (string, error) {

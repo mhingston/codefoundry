@@ -31,12 +31,12 @@ const (
 
 // Event represents a subagent lifecycle event
 type Event struct {
-	ID        string                 `json:"id"`
-	Type      EventType              `json:"type"`
-	SubagentID string                `json:"subagent_id"`
-	TaskID    string                 `json:"task_id"`
-	Timestamp time.Time              `json:"timestamp"`
-	Payload   map[string]interface{} `json:"payload"`
+	ID         string                 `json:"id"`
+	Type       EventType              `json:"type"`
+	SubagentID string                 `json:"subagent_id"`
+	TaskID     string                 `json:"task_id"`
+	Timestamp  time.Time              `json:"timestamp"`
+	Payload    map[string]interface{} `json:"payload"`
 }
 
 // NewEvent creates a new event
@@ -53,9 +53,9 @@ func NewEvent(eventType EventType, subagentID, taskID string, payload map[string
 
 // Emitter manages event emission
 type Emitter struct {
-	handlers []EventHandler
-	mu       sync.RWMutex
-	history  []*Event
+	handlers   []EventHandler
+	mu         sync.RWMutex
+	history    []*Event
 	maxHistory int
 }
 
@@ -106,7 +106,7 @@ func (e *Emitter) Emit(ctx context.Context, event *Event) error {
 func (e *Emitter) GetHistory() []*Event {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	
+
 	result := make([]*Event, len(e.history))
 	copy(result, e.history)
 	return result
@@ -116,7 +116,7 @@ func (e *Emitter) GetHistory() []*Event {
 func (e *Emitter) GetHistoryForSubagent(subagentID string) []*Event {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	
+
 	var result []*Event
 	for _, event := range e.history {
 		if event.SubagentID == subagentID {
@@ -164,7 +164,7 @@ func FilteredEmitter(handler EventHandler, types ...EventType) EventHandler {
 	for _, t := range types {
 		allowedTypes[t] = true
 	}
-	
+
 	return func(ctx context.Context, event *Event) error {
 		if len(allowedTypes) > 0 && !allowedTypes[event.Type] {
 			return nil
@@ -197,7 +197,7 @@ func NewInMemoryEventStore() *InMemoryEventStore {
 func (s *InMemoryEventStore) Save(event *Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	
+
 	s.events[event.SubagentID] = append(s.events[event.SubagentID], event)
 	return nil
 }
@@ -206,7 +206,7 @@ func (s *InMemoryEventStore) Save(event *Event) error {
 func (s *InMemoryEventStore) Get(subagentID string) ([]*Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	events := s.events[subagentID]
 	result := make([]*Event, len(events))
 	copy(result, events)
@@ -217,7 +217,7 @@ func (s *InMemoryEventStore) Get(subagentID string) ([]*Event, error) {
 func (s *InMemoryEventStore) GetAll() ([]*Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	
+
 	var result []*Event
 	for _, events := range s.events {
 		result = append(result, events...)

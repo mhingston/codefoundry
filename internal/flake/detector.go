@@ -33,19 +33,19 @@ type FlakeReport struct {
 
 // ReplaySummary summarizes a single replay result
 type ReplaySummary struct {
-	ReplayID    string    `json:"replay_id"`
-	Success     bool      `json:"success"`
-	Differences int       `json:"differences"`
-	DurationMs  int64     `json:"duration_ms"`
+	ReplayID    string `json:"replay_id"`
+	Success     bool   `json:"success"`
+	Differences int    `json:"differences"`
+	DurationMs  int64  `json:"duration_ms"`
 }
 
 // DiffSummary aggregates differences across replays
 type DiffSummary struct {
-	StageID   string `json:"stage_id,omitempty"`
-	Field     string `json:"field"`
-	Type      string `json:"type"`
-	Count     int    `json:"count"`
-	Expected  string `json:"expected,omitempty"`
+	StageID    string   `json:"stage_id,omitempty"`
+	Field      string   `json:"field"`
+	Type       string   `json:"type"`
+	Count      int      `json:"count"`
+	Expected   string   `json:"expected,omitempty"`
 	Variations []string `json:"variations,omitempty"`
 }
 
@@ -143,11 +143,11 @@ func aggregateDifferences(diffMap map[string][]replay.Difference) []DiffSummary 
 		// Use first diff as template
 		first := diffs[0]
 		summary := DiffSummary{
-			StageID:  first.StageID,
-			Field:    first.Field,
-			Type:     first.Type,
-			Count:    len(diffs),
-			Expected: fmt.Sprintf("%v", first.Expected),
+			StageID:    first.StageID,
+			Field:      first.Field,
+			Type:       first.Type,
+			Count:      len(diffs),
+			Expected:   fmt.Sprintf("%v", first.Expected),
 			Variations: make([]string, 0),
 		}
 
@@ -211,12 +211,12 @@ func calculateConfidence(successRate float64, n int) float64 {
 	if n == 0 {
 		return 0
 	}
-	
+
 	// Wilson score interval (simplified)
 	// Confidence = success_rate ± 1.96 * sqrt(success_rate * (1 - success_rate) / n)
 	z := 1.96 // 95% confidence
 	margin := z * math.Sqrt(successRate*(1-successRate)/float64(n))
-	
+
 	// Return the confidence as 1 - margin (higher is better)
 	return math.Max(0, 1-margin)
 }
@@ -226,7 +226,7 @@ func categorizeFlakeType(report *FlakeReport) string {
 	if report.SuccessRate == 0 {
 		return "consistent_failure"
 	}
-	
+
 	if report.SuccessRate == 1 {
 		return "consistent_success"
 	}
@@ -239,7 +239,7 @@ func categorizeFlakeType(report *FlakeReport) string {
 		// Check for timing-related differences
 		hasTimingDiffs := false
 		hasOutputDiffs := false
-		
+
 		for _, diff := range report.Differences {
 			switch diff.Type {
 			case "timing", "duration":
@@ -248,11 +248,11 @@ func categorizeFlakeType(report *FlakeReport) string {
 				hasOutputDiffs = true
 			}
 		}
-		
+
 		if hasTimingDiffs && !hasOutputDiffs {
 			return "timing_flaky"
 		}
-		
+
 		if hasOutputDiffs {
 			return "output_flaky"
 		}
@@ -277,7 +277,7 @@ func generateRecommendation(report *FlakeReport) string {
 
 	if len(report.Differences) > 0 {
 		firstDiff := report.Differences[0]
-		return fmt.Sprintf("Investigate %s differences in stage %s (field: %s)", 
+		return fmt.Sprintf("Investigate %s differences in stage %s (field: %s)",
 			firstDiff.Type, firstDiff.StageID, firstDiff.Field)
 	}
 

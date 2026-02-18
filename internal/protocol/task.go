@@ -9,14 +9,14 @@ import (
 
 // Task represents a single task in a task_prompt stage
 type Task struct {
-	ID                  string            `yaml:"id" json:"id"`
-	Title               string            `yaml:"title" json:"title"`
-	Description         string            `yaml:"description" json:"description"`
-	FilesToModify       []string          `yaml:"files_to_modify,omitempty" json:"files_to_modify,omitempty"`
-	AcceptanceCriteria  []string          `yaml:"acceptance_criteria,omitempty" json:"acceptance_criteria,omitempty"`
-	Dependencies        []string          `yaml:"dependencies,omitempty" json:"dependencies,omitempty"`
-	EstimatedEffort     string            `yaml:"estimated_effort,omitempty" json:"estimated_effort,omitempty"`
-	TemplateVars        map[string]string `yaml:"template_vars,omitempty" json:"template_vars,omitempty"`
+	ID                 string            `yaml:"id" json:"id"`
+	Title              string            `yaml:"title" json:"title"`
+	Description        string            `yaml:"description" json:"description"`
+	FilesToModify      []string          `yaml:"files_to_modify,omitempty" json:"files_to_modify,omitempty"`
+	AcceptanceCriteria []string          `yaml:"acceptance_criteria,omitempty" json:"acceptance_criteria,omitempty"`
+	Dependencies       []string          `yaml:"dependencies,omitempty" json:"dependencies,omitempty"`
+	EstimatedEffort    string            `yaml:"estimated_effort,omitempty" json:"estimated_effort,omitempty"`
+	TemplateVars       map[string]string `yaml:"template_vars,omitempty" json:"template_vars,omitempty"`
 }
 
 // TasksFile represents the structure of a tasks.yaml file
@@ -39,7 +39,7 @@ type TaskResult struct {
 
 // TaskDAG represents a task dependency graph
 type TaskDAG struct {
-	tasks       map[string]*Task
+	tasks        map[string]*Task
 	dependencies map[string][]string
 	dependents   map[string][]string
 }
@@ -51,17 +51,17 @@ func NewTaskDAG(tasks []Task) *TaskDAG {
 		dependencies: make(map[string][]string),
 		dependents:   make(map[string][]string),
 	}
-	
+
 	for i := range tasks {
 		task := &tasks[i]
 		dag.tasks[task.ID] = task
 		dag.dependencies[task.ID] = task.Dependencies
-		
+
 		for _, dep := range task.Dependencies {
 			dag.dependents[dep] = append(dag.dependents[dep], task.ID)
 		}
 	}
-	
+
 	return dag
 }
 
@@ -113,10 +113,10 @@ func (d *TaskDAG) TopologicalSort() ([][]string, error) {
 	for id := range d.tasks {
 		inDegree[id] = len(d.dependencies[id])
 	}
-	
+
 	var waves [][]string
 	completed := make(map[string]bool)
-	
+
 	for len(completed) < len(d.tasks) {
 		// Find tasks with no remaining dependencies
 		var wave []string
@@ -125,13 +125,13 @@ func (d *TaskDAG) TopologicalSort() ([][]string, error) {
 				wave = append(wave, id)
 			}
 		}
-		
+
 		if len(wave) == 0 {
 			return nil, fmt.Errorf("cycle detected in task dependencies")
 		}
-		
+
 		waves = append(waves, wave)
-		
+
 		// Mark tasks as completed and reduce in-degree of dependents
 		for _, id := range wave {
 			completed[id] = true
@@ -140,7 +140,7 @@ func (d *TaskDAG) TopologicalSort() ([][]string, error) {
 			}
 		}
 	}
-	
+
 	return waves, nil
 }
 
@@ -154,16 +154,16 @@ func (d *TaskDAG) Validate() error {
 			}
 		}
 	}
-	
+
 	// Check for cycles using DFS
 	visited := make(map[string]bool)
 	recStack := make(map[string]bool)
-	
+
 	var hasCycle func(string) bool
 	hasCycle = func(id string) bool {
 		visited[id] = true
 		recStack[id] = true
-		
+
 		for _, dep := range d.dependents[id] {
 			if !visited[dep] {
 				if hasCycle(dep) {
@@ -173,11 +173,11 @@ func (d *TaskDAG) Validate() error {
 				return true
 			}
 		}
-		
+
 		recStack[id] = false
 		return false
 	}
-	
+
 	for id := range d.tasks {
 		if !visited[id] {
 			if hasCycle(id) {
@@ -185,7 +185,7 @@ func (d *TaskDAG) Validate() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -195,17 +195,17 @@ func LoadTasks(path string) (*TasksFile, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read tasks file: %w", err)
 	}
-	
+
 	var tasksFile TasksFile
 	if err := yaml.Unmarshal(data, &tasksFile); err != nil {
 		return nil, fmt.Errorf("failed to parse tasks YAML: %w", err)
 	}
-	
+
 	// Set default schema version
 	if tasksFile.SchemaVersion == "" {
 		tasksFile.SchemaVersion = "codefoundry_tasks.v1"
 	}
-	
+
 	return &tasksFile, nil
 }
 
@@ -215,11 +215,11 @@ func SaveTasks(path string, tasksFile *TasksFile) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal tasks: %w", err)
 	}
-	
+
 	if err := os.WriteFile(path, data, 0644); err != nil {
 		return fmt.Errorf("failed to write tasks file: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -228,15 +228,15 @@ func ValidateTask(task *Task) error {
 	if task.ID == "" {
 		return fmt.Errorf("task ID is required")
 	}
-	
+
 	if task.Title == "" {
 		return fmt.Errorf("task '%s': title is required", task.ID)
 	}
-	
+
 	if task.Description == "" {
 		return fmt.Errorf("task '%s': description is required", task.ID)
 	}
-	
+
 	// Validate estimated_effort if provided
 	if task.EstimatedEffort != "" {
 		validEfforts := map[string]bool{
@@ -248,7 +248,7 @@ func ValidateTask(task *Task) error {
 			return fmt.Errorf("task '%s': invalid estimated_effort '%s' (valid: small, medium, large)", task.ID, task.EstimatedEffort)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -268,12 +268,12 @@ func (t *TasksFile) AddTask(task Task) error {
 			return fmt.Errorf("task with ID '%s' already exists", task.ID)
 		}
 	}
-	
+
 	// Validate task
 	if err := ValidateTask(&task); err != nil {
 		return err
 	}
-	
+
 	t.Tasks = append(t.Tasks, task)
 	return nil
 }
@@ -312,7 +312,7 @@ func (t *TasksFile) Validate() error {
 			return err
 		}
 	}
-	
+
 	// Validate DAG
 	dag := t.GetDAG()
 	return dag.Validate()
@@ -325,7 +325,7 @@ func (t *TasksFile) EstimatedTotalEffort() int {
 		"medium": 3,
 		"large":  5,
 	}
-	
+
 	total := 0
 	for _, task := range t.Tasks {
 		if value, ok := effortValues[task.EstimatedEffort]; ok {
@@ -334,7 +334,7 @@ func (t *TasksFile) EstimatedTotalEffort() int {
 			total += 2 // default to medium
 		}
 	}
-	
+
 	return total
 }
 

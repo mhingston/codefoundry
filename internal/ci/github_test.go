@@ -144,7 +144,7 @@ func TestGenerateStatusPayload(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				
+
 				// Verify it's valid JSON
 				var result CIStatus
 				err := json.Unmarshal(payload, &result)

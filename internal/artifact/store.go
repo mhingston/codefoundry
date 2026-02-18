@@ -219,7 +219,7 @@ func (s *Store) WriteFromReader(stageID, name string, r io.Reader) error {
 func (s *Store) CreateSymlink(stageID, name, targetStage, targetName string) error {
 	targetPath := s.namespace.ArtifactPath(targetStage, targetName)
 	linkPath := s.namespace.ArtifactPath(stageID, name)
-	
+
 	// Ensure link directory exists
 	linkDir := filepath.Dir(linkPath)
 	if err := os.MkdirAll(linkDir, 0755); err != nil {

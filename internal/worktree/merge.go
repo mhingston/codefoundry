@@ -73,14 +73,14 @@ func (m *Manager) MergeWithOptions(worktreeID string, opts MergeOptions) (*Merge
 	if err == nil {
 		// Clean merge
 		result.Success = true
-		
+
 		// Add commit message if provided
 		if opts.CommitMessage != "" {
 			cmd = exec.Command("git", "commit", "-m", opts.CommitMessage)
 			cmd.Dir = m.repoRoot
 			cmd.Run()
 		}
-		
+
 		return result, nil
 	}
 
@@ -117,13 +117,13 @@ func (m *Manager) MergeWithOptions(worktreeID string, opts MergeOptions) (*Merge
 		}
 		result.Success = true
 		result.Conflicts = markResolvedConflicts(conflicts, "ours")
-		
+
 		if opts.CommitMessage != "" {
 			cmd = exec.Command("git", "commit", "-m", opts.CommitMessage)
 			cmd.Dir = m.repoRoot
 			cmd.Run()
 		}
-		
+
 		return result, nil
 
 	case MergeStrategyTheirs:
@@ -137,13 +137,13 @@ func (m *Manager) MergeWithOptions(worktreeID string, opts MergeOptions) (*Merge
 		}
 		result.Success = true
 		result.Conflicts = markResolvedConflicts(conflicts, "theirs")
-		
+
 		if opts.CommitMessage != "" {
 			cmd = exec.Command("git", "commit", "-m", opts.CommitMessage)
 			cmd.Dir = m.repoRoot
 			cmd.Run()
 		}
-		
+
 		return result, nil
 
 	default:

@@ -10,11 +10,11 @@ import (
 
 // Protocol represents a workflow protocol definition
 type Protocol struct {
-	Name        string            `yaml:"name" json:"name"`
-	Version     string            `yaml:"version" json:"version"`
-	Description string            `yaml:"description,omitempty" json:"description,omitempty"`
-	Stages      []Stage           `yaml:"stages" json:"stages"`
-	Gates       []GateDefinition  `yaml:"gates,omitempty" json:"gates,omitempty"`
+	Name        string           `yaml:"name" json:"name"`
+	Version     string           `yaml:"version" json:"version"`
+	Description string           `yaml:"description,omitempty" json:"description,omitempty"`
+	Stages      []Stage          `yaml:"stages" json:"stages"`
+	Gates       []GateDefinition `yaml:"gates,omitempty" json:"gates,omitempty"`
 }
 
 // Stage represents a workflow stage

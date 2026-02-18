@@ -9,18 +9,18 @@ import (
 // ReviewResult represents the output of a review stage
 type ReviewResult struct {
 	SchemaVersion       string           `json:"schema_version"`
-	RubricScore         int              `json:"rubric_score"`          // 0-100
-	ConfidenceScore     float64          `json:"confidence_score"`      // 0.0-1.0
-	ConfidenceThreshold float64          `json:"confidence_threshold"`  // 0.0-1.0
-	Dimensions          RubricDimensions `json:"dimensions"`            // 1-5 each
-	Findings            []Finding        `json:"findings"`              // All findings
-	P1Count             int              `json:"p1_count"`              // Must fix
-	P2Count             int              `json:"p2_count"`              // Should fix
-	P3Count             int              `json:"p3_count"`              // Nice to fix
-	Summary             string           `json:"summary"`               // Human summary
-	Timestamp           time.Time        `json:"timestamp"`             // UTC
-	StageID             string           `json:"stage_id,omitempty"`    // Source stage
-	RunID               string           `json:"run_id,omitempty"`      // Source run
+	RubricScore         int              `json:"rubric_score"`         // 0-100
+	ConfidenceScore     float64          `json:"confidence_score"`     // 0.0-1.0
+	ConfidenceThreshold float64          `json:"confidence_threshold"` // 0.0-1.0
+	Dimensions          RubricDimensions `json:"dimensions"`           // 1-5 each
+	Findings            []Finding        `json:"findings"`             // All findings
+	P1Count             int              `json:"p1_count"`             // Must fix
+	P2Count             int              `json:"p2_count"`             // Should fix
+	P3Count             int              `json:"p3_count"`             // Nice to fix
+	Summary             string           `json:"summary"`              // Human summary
+	Timestamp           time.Time        `json:"timestamp"`            // UTC
+	StageID             string           `json:"stage_id,omitempty"`   // Source stage
+	RunID               string           `json:"run_id,omitempty"`     // Source run
 }
 
 // Validate validates the review result
@@ -53,7 +53,7 @@ func (r *ReviewResult) Validate() error {
 	// Verify rubric score matches dimensions
 	expectedScore := CalculateRubricScore(r.Dimensions)
 	if r.RubricScore != expectedScore {
-		return fmt.Errorf("rubric score %d doesn't match calculated score %d from dimensions", 
+		return fmt.Errorf("rubric score %d doesn't match calculated score %d from dimensions",
 			r.RubricScore, expectedScore)
 	}
 

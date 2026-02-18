@@ -28,10 +28,10 @@ type GateReport struct {
 
 // FileInfo represents a file in the review
 type FileInfo struct {
-	Path      string
-	Added     int
-	Removed   int
-	Language  string
+	Path     string
+	Added    int
+	Removed  int
+	Language string
 }
 
 // TemplateLoader loads and renders review templates

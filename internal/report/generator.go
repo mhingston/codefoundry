@@ -194,7 +194,7 @@ func (g *Generator) SaveReport(runID string, format ReportFormat, outputPath str
 func (g *Generator) discoverStages(runID string) ([]string, error) {
 	// Read from run directory
 	runPath := filepath.Join(g.basePath, "artifacts", runID)
-	
+
 	entries, err := os.ReadDir(runPath)
 	if err != nil {
 		return nil, err
@@ -221,10 +221,10 @@ func (g *Generator) loadGateReports(stageID string) ([]gate.GateResult, error) {
 	var results []gate.GateResult
 	for _, artifact := range artifacts {
 		// Skip non-gate artifacts
-		if artifact == "status.json" || 
-		   artifact == "review-result.json" || 
-		   artifact == "lock-decision.json" ||
-		   filepath.Ext(artifact) != ".json" {
+		if artifact == "status.json" ||
+			artifact == "review-result.json" ||
+			artifact == "lock-decision.json" ||
+			filepath.Ext(artifact) != ".json" {
 			continue
 		}
 
@@ -356,7 +356,7 @@ func (g *Generator) renderMarkdown(report *Report) string {
 			md += fmt.Sprintf("- **Status:** %s\n", gate.Status)
 			md += fmt.Sprintf("- **Command:** %s\n", gate.Command)
 			md += fmt.Sprintf("- **Duration:** %dms\n", gate.DurationMs)
-			
+
 			if len(gate.Failures) > 0 {
 				md += "\n**Failures:**\n"
 				for _, f := range gate.Failures {
@@ -372,20 +372,20 @@ func (g *Generator) renderMarkdown(report *Report) string {
 		md += "## Review\n\n"
 		md += fmt.Sprintf("**Rubric Score:** %d/100\n\n", report.ReviewResult.RubricScore)
 		md += fmt.Sprintf("**Confidence:** %.2f\n\n", report.ReviewResult.ConfidenceScore)
-		
+
 		md += "### Dimensions\n\n"
 		md += fmt.Sprintf("- Correctness: %d/5\n", report.ReviewResult.Dimensions.Correctness)
 		md += fmt.Sprintf("- Efficiency: %d/5\n", report.ReviewResult.Dimensions.Efficiency)
 		md += fmt.Sprintf("- Maintainability: %d/5\n", report.ReviewResult.Dimensions.Maintainability)
 		md += fmt.Sprintf("- Safety: %d/5\n\n", report.ReviewResult.Dimensions.Safety)
-		
+
 		if report.ReviewResult.P1Count > 0 || report.ReviewResult.P2Count > 0 || report.ReviewResult.P3Count > 0 {
 			md += "### Findings\n\n"
 			md += fmt.Sprintf("- P1 (Must fix): %d\n", report.ReviewResult.P1Count)
 			md += fmt.Sprintf("- P2 (Should fix): %d\n", report.ReviewResult.P2Count)
 			md += fmt.Sprintf("- P3 (Nice to fix): %d\n\n", report.ReviewResult.P3Count)
 		}
-		
+
 		if report.ReviewResult.Summary != "" {
 			md += fmt.Sprintf("### Summary\n\n%s\n\n", report.ReviewResult.Summary)
 		}
@@ -396,7 +396,7 @@ func (g *Generator) renderMarkdown(report *Report) string {
 		md += "## Lock Decision\n\n"
 		md += fmt.Sprintf("**Decision:** %s\n\n", report.LockDecision.Decision)
 		md += fmt.Sprintf("**Reason:** %s\n\n", report.LockDecision.Reason)
-		
+
 		if report.LockDecision.EscalationRequired {
 			md += fmt.Sprintf("**Escalation Required:** Yes\n\n")
 			md += fmt.Sprintf("**Escalation Reason:** %s\n\n", report.LockDecision.EscalationReason)
@@ -414,7 +414,7 @@ func (g *Generator) renderCI(report *Report) string {
 	for _, gate := range report.GateReports {
 		for _, failure := range gate.Failures {
 			if failure.File != "" {
-				output += fmt.Sprintf("::error file=%s,line=%d::%s\n", 
+				output += fmt.Sprintf("::error file=%s,line=%d::%s\n",
 					failure.File, failure.Line, failure.Message)
 			} else {
 				output += fmt.Sprintf("::error::%s: %s\n", gate.GateID, failure.Message)
@@ -445,7 +445,7 @@ func (g *Generator) renderCI(report *Report) string {
 	// Summary
 	output += fmt.Sprintf("\n## CodeFoundry Summary\n\n")
 	output += fmt.Sprintf("Status: %s\n", report.Status)
-	
+
 	if report.LockDecision != nil {
 		output += fmt.Sprintf("Lock Decision: %s\n", report.LockDecision.Decision)
 	}

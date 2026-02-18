@@ -23,11 +23,11 @@ func NewCheckpointManager(stateManager *StateManager, basePath string) *Checkpoi
 
 // CheckpointData holds checkpoint information for a stage
 type CheckpointData struct {
-	StageID       string                 `json:"stage_id"`
-	RunID         string                 `json:"run_id"`
-	Step          int                    `json:"step,omitempty"`
-	Data          map[string]interface{} `json:"data,omitempty"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	StageID  string                 `json:"stage_id"`
+	RunID    string                 `json:"run_id"`
+	Step     int                    `json:"step,omitempty"`
+	Data     map[string]interface{} `json:"data,omitempty"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
 // Create creates a checkpoint for a stage
@@ -56,7 +56,7 @@ func (cm *CheckpointManager) Create(stageID string, step int, data map[string]in
 // Restore restores a checkpoint for a stage
 func (cm *CheckpointManager) Restore(stageID string) (*CheckpointData, error) {
 	checkpointPath := cm.getCheckpointPath(stageID)
-	
+
 	// Try to load from file first
 	checkpoint, err := cm.loadCheckpointFile(checkpointPath)
 	if err != nil {
@@ -65,7 +65,7 @@ func (cm *CheckpointManager) Restore(stageID string) (*CheckpointData, error) {
 		if stateCheckpoint == nil || stateCheckpoint.StageID != stageID {
 			return nil, fmt.Errorf("no checkpoint found for stage: %s", stageID)
 		}
-		
+
 		checkpoint = &CheckpointData{
 			StageID: stateCheckpoint.StageID,
 			RunID:   cm.stateManager.GetRunID(),
@@ -79,7 +79,7 @@ func (cm *CheckpointManager) Restore(stageID string) (*CheckpointData, error) {
 // Delete removes a checkpoint for a stage
 func (cm *CheckpointManager) Delete(stageID string) error {
 	checkpointPath := cm.getCheckpointPath(stageID)
-	
+
 	// Remove checkpoint file if it exists
 	if err := os.Remove(checkpointPath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to delete checkpoint file: %w", err)
@@ -112,7 +112,7 @@ func (cm *CheckpointManager) Exists(stageID string) bool {
 // List returns all checkpoint files for the current run
 func (cm *CheckpointManager) List() ([]string, error) {
 	checkpointDir := filepath.Join(cm.basePath, "state", "checkpoints")
-	
+
 	entries, err := os.ReadDir(checkpointDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -134,7 +134,7 @@ func (cm *CheckpointManager) List() ([]string, error) {
 // Cleanup removes all checkpoints for the current run
 func (cm *CheckpointManager) Cleanup() error {
 	checkpointDir := filepath.Join(cm.basePath, "state", "checkpoints")
-	
+
 	// Remove checkpoint directory
 	if err := os.RemoveAll(checkpointDir); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to cleanup checkpoints: %w", err)
@@ -289,7 +289,7 @@ func (cm *CheckpointManager) CanResume() (bool, string, error) {
 		checkpointDir := filepath.Join(cm.basePath, "state", "checkpoints")
 		var mostRecent string
 		var mostRecentTime int64
-		
+
 		for _, cp := range checkpoints {
 			info, err := os.Stat(filepath.Join(checkpointDir, cp))
 			if err != nil {

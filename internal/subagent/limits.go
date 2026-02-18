@@ -43,7 +43,7 @@ func (l Limits) Validate() error {
 // Merge combines limits, with non-zero values in other taking precedence
 func (l Limits) Merge(other Limits) Limits {
 	result := l
-	
+
 	if other.MaxTurns > 0 {
 		result.MaxTurns = other.MaxTurns
 	}
@@ -56,7 +56,7 @@ func (l Limits) Merge(other Limits) Limits {
 	if other.MemoryMB > 0 {
 		result.MemoryMB = other.MemoryMB
 	}
-	
+
 	return result
 }
 
@@ -141,7 +141,7 @@ func (e *Enforcer) Progress() float64 {
 	turnsProgress := 0.0
 	tokensProgress := 0.0
 	durationProgress := 0.0
-	
+
 	if e.limits.MaxTurns > 0 {
 		turnsProgress = float64(e.usage.TurnsUsed) / float64(e.limits.MaxTurns)
 	}
@@ -151,7 +151,7 @@ func (e *Enforcer) Progress() float64 {
 	if e.limits.Timeout > 0 {
 		durationProgress = float64(e.usage.Duration) / float64(e.limits.Timeout)
 	}
-	
+
 	// Return the highest progress (closest to limit)
 	maxProgress := turnsProgress
 	if tokensProgress > maxProgress {
@@ -160,6 +160,6 @@ func (e *Enforcer) Progress() float64 {
 	if durationProgress > maxProgress {
 		maxProgress = durationProgress
 	}
-	
+
 	return maxProgress * 100
 }

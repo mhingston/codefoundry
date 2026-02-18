@@ -14,9 +14,9 @@ import (
 
 // Handler executes review stages
 type Handler struct {
-	artifactStore     *artifact.Store
-	classifier        *SeverityClassifier
-	templateLoader    *TemplateLoader
+	artifactStore       *artifact.Store
+	classifier          *SeverityClassifier
+	templateLoader      *TemplateLoader
 	confidenceThreshold float64
 }
 
@@ -198,10 +198,10 @@ func (h *Handler) LoadGateReports(stageID string) ([]gate.GateResult, error) {
 	var reports []gate.GateResult
 	for _, artifact := range artifacts {
 		// Gate reports end with .json and are not special files
-		if filepath.Ext(artifact) == ".json" && 
-		   artifact != "status.json" && 
-		   artifact != "review-result.json" &&
-		   artifact != "review-prompt.md" {
+		if filepath.Ext(artifact) == ".json" &&
+			artifact != "status.json" &&
+			artifact != "review-result.json" &&
+			artifact != "review-prompt.md" {
 			data, err := h.artifactStore.Read(stageID, artifact)
 			if err != nil {
 				continue // Skip unreadable files

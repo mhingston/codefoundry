@@ -542,12 +542,12 @@ func TestGetBundleInfo_NotFound(t *testing.T) {
 
 	// Create a tar.gz without bundle-info.json
 	bundlePath := filepath.Join(tmpDir, "no-info.tar.gz")
-	
+
 	// Create minimal tar.gz
 	outFile, _ := os.Create(bundlePath)
 	gzWriter := gzip.NewWriter(outFile)
 	tw := tar.NewWriter(gzWriter)
-	
+
 	// Add a file that's not bundle-info.json
 	header := &tar.Header{
 		Name: "other-file.txt",
@@ -556,7 +556,7 @@ func TestGetBundleInfo_NotFound(t *testing.T) {
 	}
 	tw.WriteHeader(header)
 	tw.Write([]byte("test"))
-	
+
 	tw.Close()
 	gzWriter.Close()
 	outFile.Close()
@@ -576,11 +576,11 @@ func TestGetBundleInfo_InvalidJSON(t *testing.T) {
 
 	// Create a tar.gz with invalid bundle-info.json
 	bundlePath := filepath.Join(tmpDir, "invalid-info.tar.gz")
-	
+
 	outFile, _ := os.Create(bundlePath)
 	gzWriter := gzip.NewWriter(outFile)
 	tw := tar.NewWriter(gzWriter)
-	
+
 	header := &tar.Header{
 		Name: "evidence/bundle-info.json",
 		Mode: 0644,
@@ -588,7 +588,7 @@ func TestGetBundleInfo_InvalidJSON(t *testing.T) {
 	}
 	tw.WriteHeader(header)
 	tw.Write([]byte("not valid"))
-	
+
 	tw.Close()
 	gzWriter.Close()
 	outFile.Close()
@@ -611,10 +611,10 @@ func TestBundleCreator_CreateBundleWithMetadata(t *testing.T) {
 	outputPath := filepath.Join(tmpDir, "bundle.tar.gz")
 
 	metadata := map[string]interface{}{
-		"version":     "1.0.0",
-		"author":      "test-user",
-		"build_id":    "12345",
-		"custom_key":  "custom_value",
+		"version":    "1.0.0",
+		"author":     "test-user",
+		"build_id":   "12345",
+		"custom_key": "custom_value",
 	}
 
 	if err := creator.CreateBundleWithMetadata("test-run", outputPath, metadata); err != nil {

@@ -289,10 +289,10 @@ func TestCalculateImprovement(t *testing.T) {
 
 func TestFilterRunsByWeek(t *testing.T) {
 	runs := []*RunData{
-		{Timestamp: time.Date(2026, time.February, 16, 0, 0, 0, 0, time.UTC)},  // W08
-		{Timestamp: time.Date(2026, time.February, 17, 0, 0, 0, 0, time.UTC)},  // W08
-		{Timestamp: time.Date(2026, time.February, 23, 0, 0, 0, 0, time.UTC)},  // W09
-		{Timestamp: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)},    // W01
+		{Timestamp: time.Date(2026, time.February, 16, 0, 0, 0, 0, time.UTC)}, // W08
+		{Timestamp: time.Date(2026, time.February, 17, 0, 0, 0, 0, time.UTC)}, // W08
+		{Timestamp: time.Date(2026, time.February, 23, 0, 0, 0, 0, time.UTC)}, // W09
+		{Timestamp: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC)},   // W01
 	}
 
 	filtered := filterRunsByWeek(runs, "2026-W08")

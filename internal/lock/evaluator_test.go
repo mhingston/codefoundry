@@ -407,9 +407,9 @@ func contains(slice []string, item string) bool {
 
 func TestEvaluator_Evaluate_ConfidenceThresholdEdgeCases(t *testing.T) {
 	tests := []struct {
-		name      string
-		score     float64
-		threshold float64
+		name       string
+		score      float64
+		threshold  float64
 		wantReopen bool
 	}{
 		{
@@ -480,9 +480,9 @@ func TestEvaluator_Evaluate_ConfidenceThresholdEdgeCases(t *testing.T) {
 
 func TestEvaluator_Evaluate_AllDecisionPaths(t *testing.T) {
 	tests := []struct {
-		name            string
-		gateResults     []GateResult
-		reviewResult    *review.ReviewResult
+		name             string
+		gateResults      []GateResult
+		reviewResult     *review.ReviewResult
 		expectedDecision string
 		expectEscalation bool
 	}{
@@ -958,10 +958,10 @@ func TestBuildFromInputs_ReviewResultZeroThreshold(t *testing.T) {
 
 func TestLockDecision_Validate(t *testing.T) {
 	tests := []struct {
-		name    string
+		name     string
 		decision LockDecision
-		wantErr bool
-		errMsg  string
+		wantErr  bool
+		errMsg   string
 	}{
 		{
 			name: "valid decision",
@@ -1158,10 +1158,10 @@ func TestLockDecision_Validate(t *testing.T) {
 
 func TestGateResult_EdgeCases(t *testing.T) {
 	tests := []struct {
-		name       string
-		status     string
-		wantPass   bool
-		wantFail   bool
+		name     string
+		status   string
+		wantPass bool
+		wantFail bool
 	}{
 		{
 			name:     "empty status",

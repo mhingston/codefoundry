@@ -177,9 +177,9 @@ func (e *Evaluator) LoadGateResultsFromStage(stageID string) ([]GateResult, erro
 		if filepath.Ext(artifact) != ".json" {
 			continue
 		}
-		if artifact == "status.json" || 
-		   artifact == "review-result.json" || 
-		   artifact == "lock-decision.json" {
+		if artifact == "status.json" ||
+			artifact == "review-result.json" ||
+			artifact == "lock-decision.json" {
 			continue
 		}
 
@@ -194,11 +194,11 @@ func (e *Evaluator) LoadGateResultsFromStage(stageID string) ([]GateResult, erro
 		}
 
 		// Check if it's a gate result
-		if schema, ok := gateResult["schema_version"].(string); ok && 
-		   schema == "codefoundry_gate_report.v1" {
+		if schema, ok := gateResult["schema_version"].(string); ok &&
+			schema == "codefoundry_gate_report.v1" {
 			gateID, _ := gateResult["gate_id"].(string)
 			status, _ := gateResult["status"].(string)
-			
+
 			results = append(results, GateResult{
 				GateID:   gateID,
 				Status:   status,

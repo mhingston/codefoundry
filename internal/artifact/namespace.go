@@ -67,12 +67,12 @@ func (n *Namespace) ResolveInputPath(stageID, inputPath string) string {
 	if filepath.IsAbs(inputPath) {
 		return inputPath
 	}
-	
+
 	// If path starts with ./ or ../, resolve relative to current directory
 	if strings.HasPrefix(inputPath, "./") || strings.HasPrefix(inputPath, "../") {
 		return inputPath
 	}
-	
+
 	// Otherwise, resolve relative to the stage's artifact directory
 	return filepath.Join(n.StagePath(stageID), inputPath)
 }
@@ -84,7 +84,7 @@ func (n *Namespace) ListStages() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	stages := make([]string, 0, len(entries))
 	for _, entry := range entries {
 		info, err := filepath.Abs(entry)
@@ -97,7 +97,7 @@ func (n *Namespace) ListStages() ([]string, error) {
 		}
 		stages = append(stages, filepath.Base(entry))
 	}
-	
+
 	return stages, nil
 }
 
@@ -106,17 +106,17 @@ func ValidateArtifactName(name string) error {
 	if name == "" {
 		return fmt.Errorf("artifact name cannot be empty")
 	}
-	
+
 	// Check for path traversal
 	if strings.Contains(name, "..") {
 		return fmt.Errorf("artifact name contains path traversal: %s", name)
 	}
-	
+
 	// Check for absolute paths
 	if filepath.IsAbs(name) {
 		return fmt.Errorf("artifact name cannot be absolute path: %s", name)
 	}
-	
+
 	return nil
 }
 

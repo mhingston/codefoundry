@@ -6,12 +6,12 @@ import (
 
 // Principle represents a golden principle to enforce
 type Principle struct {
-	ID       string   `json:"id"`
-	Name     string   `json:"name"`
-	Severity string   `json:"severity"` // warning, error
-	Pattern  string   `json:"pattern"`  // regex pattern
-	Message  string   `json:"message"`
-	Category string   `json:"category"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Severity string `json:"severity"` // warning, error
+	Pattern  string `json:"pattern"`  // regex pattern
+	Message  string `json:"message"`
+	Category string `json:"category"`
 	regex    *regexp.Regexp
 }
 

@@ -37,13 +37,13 @@ type StageExecution struct {
 
 // EnvironmentState captures the execution environment
 type EnvironmentState struct {
-	GoVersion    string            `json:"go_version"`
-	OS           string            `json:"os"`
-	Arch         string            `json:"arch"`
-	GitCommit    string            `json:"git_commit,omitempty"`
-	WorkingDir   string            `json:"working_dir"`
-	EnvVars      map[string]string `json:"env_vars"` // Sanitized
-	NumCPU       int               `json:"num_cpu"`
+	GoVersion  string            `json:"go_version"`
+	OS         string            `json:"os"`
+	Arch       string            `json:"arch"`
+	GitCommit  string            `json:"git_commit,omitempty"`
+	WorkingDir string            `json:"working_dir"`
+	EnvVars    map[string]string `json:"env_vars"` // Sanitized
+	NumCPU     int               `json:"num_cpu"`
 }
 
 // Recorder records execution traces
@@ -88,19 +88,19 @@ func (r *Recorder) RecordOutput(key string, value interface{}) {
 // RecordStage records a stage execution
 func (r *Recorder) RecordStage(stageID string, input, output interface{}) *StageExecution {
 	now := time.Now().UTC()
-	
+
 	stage := StageExecution{
 		StageID:   stageID,
 		StartedAt: now,
 	}
-	
+
 	if input != nil {
 		stage.Inputs = toMap(input)
 	}
 	if output != nil {
 		stage.Outputs = toMap(output)
 	}
-	
+
 	r.trace.Stages = append(r.trace.Stages, stage)
 	return &r.trace.Stages[len(r.trace.Stages)-1]
 }
@@ -126,20 +126,20 @@ func (r *Recorder) CaptureEnvironment() error {
 	r.trace.Environment.OS = runtime.GOOS
 	r.trace.Environment.Arch = runtime.GOARCH
 	r.trace.Environment.NumCPU = runtime.NumCPU()
-	
+
 	// Get working directory
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 	r.trace.Environment.WorkingDir = wd
-	
+
 	// Capture sanitized environment variables
 	r.captureEnvVars()
-	
+
 	// Try to get git commit
 	r.captureGitCommit()
-	
+
 	return nil
 }
 
@@ -155,7 +155,7 @@ func (r *Recorder) captureEnvVars() {
 		"GITHUB_REF",
 		"GITHUB_SHA",
 	}
-	
+
 	for _, key := range varsToCapture {
 		if value := os.Getenv(key); value != "" {
 			r.trace.Environment.EnvVars[key] = value
@@ -179,16 +179,16 @@ func (r *Recorder) Finalize() {
 // Save saves the execution trace to the artifact store
 func (r *Recorder) Save(artifactStore *artifact.Store) error {
 	r.Finalize()
-	
+
 	data, err := json.MarshalIndent(r.trace, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal execution trace: %w", err)
 	}
-	
+
 	if err := artifactStore.Write("_trace", "execution-trace.json", data); err != nil {
 		return fmt.Errorf("failed to save execution trace: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -207,16 +207,16 @@ func toMap(v interface{}) map[string]interface{} {
 	if v == nil {
 		return nil
 	}
-	
+
 	data, err := json.Marshal(v)
 	if err != nil {
 		return map[string]interface{}{"_error": err.Error()}
 	}
-	
+
 	var result map[string]interface{}
 	if err := json.Unmarshal(data, &result); err != nil {
 		return map[string]interface{}{"_raw": v}
 	}
-	
+
 	return result
 }

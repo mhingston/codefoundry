@@ -17,13 +17,13 @@ const (
 // State represents the runtime state of a workflow run
 type State struct {
 	SchemaVersion   string                 `json:"schema_version"`
-	RunID          string                 `json:"run_id"`
-	ProtocolVersion string                `json:"protocol_version"`
-	Stages         map[string]*StageState  `json:"stages"`
-	CurrentStage   string                  `json:"current_stage,omitempty"`
-	Checkpoint     *Checkpoint             `json:"checkpoint,omitempty"`
-	Metadata       *RunMetadata            `json:"metadata,omitempty"`
-	UpdatedAt      time.Time              `json:"updated_at"`
+	RunID           string                 `json:"run_id"`
+	ProtocolVersion string                 `json:"protocol_version"`
+	Stages          map[string]*StageState `json:"stages"`
+	CurrentStage    string                 `json:"current_stage,omitempty"`
+	Checkpoint      *Checkpoint            `json:"checkpoint,omitempty"`
+	Metadata        *RunMetadata           `json:"metadata,omitempty"`
+	UpdatedAt       time.Time              `json:"updated_at"`
 }
 
 // StageState represents the state of a single stage
@@ -53,11 +53,11 @@ type RunMetadata struct {
 type Status string
 
 const (
-	StatusPending  Status = "pending"
-	StatusRunning  Status = "running"
-	StatusPass     Status = "pass"
-	StatusFail     Status = "fail"
-	StatusSkipped  Status = "skipped"
+	StatusPending Status = "pending"
+	StatusRunning Status = "running"
+	StatusPass    Status = "pass"
+	StatusFail    Status = "fail"
+	StatusSkipped Status = "skipped"
 )
 
 // StateManager handles state persistence
@@ -84,13 +84,13 @@ func NewStateManagerWithPath(statePath string) *StateManager {
 // Initialize creates a new state for a run
 func (sm *StateManager) Initialize(protocolVersion string) error {
 	runID := generateRunID()
-	
+
 	state := &State{
 		SchemaVersion:   StateVersion,
-		RunID:          runID,
+		RunID:           runID,
 		ProtocolVersion: protocolVersion,
-		Stages:         make(map[string]*StageState),
-		UpdatedAt:      time.Now().UTC(),
+		Stages:          make(map[string]*StageState),
+		UpdatedAt:       time.Now().UTC(),
 		Metadata: &RunMetadata{
 			StartedAt: timePtr(time.Now().UTC()),
 		},
@@ -273,9 +273,9 @@ func (sm *StateManager) IsStageComplete(stageID string) bool {
 		return false
 	}
 
-	return stageState.Status == string(StatusPass) || 
-	       stageState.Status == string(StatusFail) || 
-	       stageState.Status == string(StatusSkipped)
+	return stageState.Status == string(StatusPass) ||
+		stageState.Status == string(StatusFail) ||
+		stageState.Status == string(StatusSkipped)
 }
 
 // GetCompletedStages returns all completed stage IDs

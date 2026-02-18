@@ -15,12 +15,12 @@ import (
 
 // ReplayResult represents the result of a replay execution
 type ReplayResult struct {
-	OriginalRunID string         `json:"original_run_id"`
-	ReplayRunID   string         `json:"replay_run_id"`
-	Matches       bool           `json:"matches"`
-	Differences   []Difference   `json:"differences"`
-	DurationMs    int64          `json:"duration_ms"`
-	ReplayCount   int            `json:"replay_count"`
+	OriginalRunID string       `json:"original_run_id"`
+	ReplayRunID   string       `json:"replay_run_id"`
+	Matches       bool         `json:"matches"`
+	Differences   []Difference `json:"differences"`
+	DurationMs    int64        `json:"duration_ms"`
+	ReplayCount   int          `json:"replay_count"`
 }
 
 // Difference represents a difference between expected and actual
@@ -44,7 +44,7 @@ type Comparison struct {
 func LoadTrace(runID string, basePath string) (*ExecutionTrace, error) {
 	ns := artifact.NewNamespace(basePath, runID)
 	store := artifact.NewStore(ns)
-	
+
 	return LoadTraceFromStore(store)
 }
 
@@ -54,12 +54,12 @@ func LoadTraceFromStore(store *artifact.Store) (*ExecutionTrace, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load execution trace: %w", err)
 	}
-	
+
 	var trace ExecutionTrace
 	if err := json.Unmarshal(data, &trace); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal execution trace: %w", err)
 	}
-	
+
 	return &trace, nil
 }
 
@@ -70,20 +70,20 @@ func Replay(runID string, runner *stagepkg.Runner, basePath string) (*ReplayResu
 	if err != nil {
 		return nil, fmt.Errorf("failed to load original trace: %w", err)
 	}
-	
+
 	startTime := time.Now()
-	
+
 	// Create replay result
 	result := &ReplayResult{
 		OriginalRunID: runID,
 		ReplayRunID:   generateReplayID(),
 		Differences:   make([]Difference, 0),
 	}
-	
+
 	// Replay each stage
 	for _, originalStage := range originalTrace.Stages {
 		ctx := context.Background()
-		
+
 		// Run the stage
 		if err := runner.RunSingleStage(ctx, originalStage.StageID); err != nil {
 			result.Differences = append(result.Differences, Difference{
@@ -95,16 +95,16 @@ func Replay(runID string, runner *stagepkg.Runner, basePath string) (*ReplayResu
 			})
 			continue
 		}
-		
+
 		// Compare outputs
 		diffs := compareStageOutputs(&originalStage, runner)
 		result.Differences = append(result.Differences, diffs...)
 	}
-	
+
 	result.DurationMs = time.Since(startTime).Milliseconds()
 	result.Matches = len(result.Differences) == 0
 	result.ReplayCount = 1
-	
+
 	return result, nil
 }
 
@@ -113,23 +113,23 @@ func ReplayMultiple(runID string, runner *stagepkg.Runner, basePath string, coun
 	if count <= 0 {
 		count = 5 // Default
 	}
-	
+
 	allDifferences := make([]Difference, 0)
 	var totalDuration int64
-	
+
 	for i := 0; i < count; i++ {
 		result, err := Replay(runID, runner, basePath)
 		if err != nil {
 			return nil, fmt.Errorf("replay %d failed: %w", i+1, err)
 		}
-		
+
 		allDifferences = append(allDifferences, result.Differences...)
 		totalDuration += result.DurationMs
 	}
-	
+
 	// Consolidate results
 	consolidated := consolidateDifferences(allDifferences)
-	
+
 	return &ReplayResult{
 		OriginalRunID: runID,
 		ReplayRunID:   generateReplayID(),
@@ -146,18 +146,18 @@ func CompareRuns(runID1, runID2 string, basePath string) (*Comparison, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load trace 1: %w", err)
 	}
-	
+
 	trace2, err := LoadTrace(runID2, basePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load trace 2: %w", err)
 	}
-	
+
 	comparison := &Comparison{
 		RunID1:      runID1,
 		RunID2:      runID2,
 		Differences: make([]Difference, 0),
 	}
-	
+
 	// Compare stage counts
 	if len(trace1.Stages) != len(trace2.Stages) {
 		comparison.Differences = append(comparison.Differences, Difference{
@@ -167,15 +167,15 @@ func CompareRuns(runID1, runID2 string, basePath string) (*Comparison, error) {
 			Type:     "output",
 		})
 	}
-	
+
 	// Compare each stage
 	for i, stage1 := range trace1.Stages {
 		if i >= len(trace2.Stages) {
 			break
 		}
-		
+
 		stage2 := trace2.Stages[i]
-		
+
 		// Compare stage status
 		if stage1.Status != stage2.Status {
 			comparison.Differences = append(comparison.Differences, Difference{
@@ -186,21 +186,21 @@ func CompareRuns(runID1, runID2 string, basePath string) (*Comparison, error) {
 				Type:     "status",
 			})
 		}
-		
+
 		// Compare outputs
 		diffs := compareValues(stage1.StageID, "output", stage1.Outputs, stage2.Outputs)
 		comparison.Differences = append(comparison.Differences, diffs...)
 	}
-	
+
 	comparison.Matches = len(comparison.Differences) == 0
-	
+
 	return comparison, nil
 }
 
 // compareStageOutputs compares stage outputs with current execution
 func compareStageOutputs(original *StageExecution, runner *stagepkg.Runner) []Difference {
 	differences := make([]Difference, 0)
-	
+
 	// Get current stage status from runner
 	statuses, err := runner.GetStageStatuses()
 	if err != nil {
@@ -212,7 +212,7 @@ func compareStageOutputs(original *StageExecution, runner *stagepkg.Runner) []Di
 			Type:     "error",
 		}}
 	}
-	
+
 	currentStatus, ok := statuses[original.StageID]
 	if !ok {
 		return []Difference{{
@@ -223,7 +223,7 @@ func compareStageOutputs(original *StageExecution, runner *stagepkg.Runner) []Di
 			Type:     "status",
 		}}
 	}
-	
+
 	if currentStatus != original.Status {
 		differences = append(differences, Difference{
 			StageID:  original.StageID,
@@ -233,18 +233,18 @@ func compareStageOutputs(original *StageExecution, runner *stagepkg.Runner) []Di
 			Type:     "status",
 		})
 	}
-	
+
 	return differences
 }
 
 // compareValues recursively compares two values and returns differences
 func compareValues(stageID, field string, expected, actual interface{}) []Difference {
 	differences := make([]Difference, 0)
-	
+
 	if expected == nil && actual == nil {
 		return differences
 	}
-	
+
 	if expected == nil || actual == nil {
 		return []Difference{{
 			StageID:  stageID,
@@ -254,7 +254,7 @@ func compareValues(stageID, field string, expected, actual interface{}) []Differ
 			Type:     "output",
 		}}
 	}
-	
+
 	// Use reflection for deep comparison
 	if !reflect.DeepEqual(expected, actual) {
 		differences = append(differences, Difference{
@@ -265,7 +265,7 @@ func compareValues(stageID, field string, expected, actual interface{}) []Differ
 			Type:     "output",
 		})
 	}
-	
+
 	return differences
 }
 
@@ -273,7 +273,7 @@ func compareValues(stageID, field string, expected, actual interface{}) []Differ
 func consolidateDifferences(diffs []Difference) []Difference {
 	seen := make(map[string]bool)
 	result := make([]Difference, 0)
-	
+
 	for _, diff := range diffs {
 		key := fmt.Sprintf("%s:%s:%v", diff.StageID, diff.Field, diff.Expected)
 		if !seen[key] {
@@ -281,7 +281,7 @@ func consolidateDifferences(diffs []Difference) []Difference {
 			result = append(result, diff)
 		}
 	}
-	
+
 	return result
 }
 
@@ -296,11 +296,11 @@ func SaveReplayResult(store *artifact.Store, result *ReplayResult) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal replay result: %w", err)
 	}
-	
+
 	if err := store.Write("_replay", "replay-result.json", data); err != nil {
 		return fmt.Errorf("failed to save replay result: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -310,19 +310,19 @@ func LoadReplayResult(store *artifact.Store) (*ReplayResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load replay result: %w", err)
 	}
-	
+
 	var result ReplayResult
 	if err := json.Unmarshal(data, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal replay result: %w", err)
 	}
-	
+
 	return &result, nil
 }
 
 // ListTraces returns a list of all execution traces in the base path
 func ListTraces(basePath string) ([]string, error) {
 	traces := make([]string, 0)
-	
+
 	artifactsPath := filepath.Join(basePath, "artifacts")
 	entries, err := os.ReadDir(artifactsPath)
 	if err != nil {
@@ -331,7 +331,7 @@ func ListTraces(basePath string) ([]string, error) {
 		}
 		return nil, fmt.Errorf("failed to read artifacts directory: %w", err)
 	}
-	
+
 	for _, entry := range entries {
 		if entry.IsDir() {
 			// Check if trace exists
@@ -341,6 +341,6 @@ func ListTraces(basePath string) ([]string, error) {
 			}
 		}
 	}
-	
+
 	return traces, nil
 }

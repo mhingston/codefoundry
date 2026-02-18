@@ -12,27 +12,27 @@ import (
 type Status string
 
 const (
-	StatusPending    Status = "pending"
-	StatusRunning    Status = "running"
-	StatusCompleted  Status = "completed"
-	StatusFailed     Status = "failed"
-	StatusAborted    Status = "aborted"
-	StatusTimeout    Status = "timeout"
+	StatusPending   Status = "pending"
+	StatusRunning   Status = "running"
+	StatusCompleted Status = "completed"
+	StatusFailed    Status = "failed"
+	StatusAborted   Status = "aborted"
+	StatusTimeout   Status = "timeout"
 )
 
 // Subagent represents a running subagent
 type Subagent struct {
-	ID         string
-	TaskID     string
-	Worktree   string
-	Status     Status
-	Limits     Limits
-	Usage      Usage
-	Result     *Result
-	Error      error
-	StartedAt  *time.Time
+	ID          string
+	TaskID      string
+	Worktree    string
+	Status      Status
+	Limits      Limits
+	Usage       Usage
+	Result      *Result
+	Error       error
+	StartedAt   *time.Time
 	CompletedAt *time.Time
-	mu         sync.RWMutex
+	mu          sync.RWMutex
 }
 
 // SubagentStatus provides a snapshot of subagent status
@@ -59,20 +59,20 @@ type Result struct {
 
 // SpawnRequest contains parameters for spawning a subagent
 type SpawnRequest struct {
-	TaskID      string
+	TaskID       string
 	WorktreePath string
-	Limits      Limits
-	Prompt      string
+	Limits       Limits
+	Prompt       string
 	TemplateVars map[string]string
-	Environment map[string]string
+	Environment  map[string]string
 }
 
 // Runner manages subagent execution
 type Runner struct {
-	subagents   map[string]*Subagent
-	emitter     *Emitter
-	mu          sync.RWMutex
-	basePath    string
+	subagents map[string]*Subagent
+	emitter   *Emitter
+	mu        sync.RWMutex
+	basePath  string
 }
 
 // NewRunner creates a new subagent runner
@@ -82,10 +82,10 @@ func NewRunner(basePath string) *Runner {
 		emitter:   NewEmitter(),
 		basePath:  basePath,
 	}
-	
+
 	// Register console emitter by default
 	runner.emitter.RegisterHandler(ConsoleEmitter())
-	
+
 	return runner
 }
 
@@ -103,7 +103,7 @@ func (r *Runner) Spawn(req SpawnRequest) (*Subagent, error) {
 	}
 
 	subagentID := fmt.Sprintf("subagent-%s-%d", req.TaskID, time.Now().UnixNano())
-	
+
 	subagent := &Subagent{
 		ID:       subagentID,
 		TaskID:   req.TaskID,
@@ -159,20 +159,20 @@ func (r *Runner) Wait(ctx context.Context, subagentID string) (*Result, error) {
 				Success: false,
 				Output:  "Subagent timed out",
 			}, fmt.Errorf("subagent %s timed out after %v", subagentID, subagent.Limits.Timeout)
-			
+
 		case <-ticker.C:
 			subagent.mu.RLock()
 			status := subagent.Status
 			result := subagent.Result
 			subagent.mu.RUnlock()
-			
+
 			if status == StatusCompleted || status == StatusFailed || status == StatusAborted {
 				if result != nil {
 					return result, nil
 				}
 				return nil, subagent.Error
 			}
-			
+
 			// Check resource limits
 			enforcer := NewEnforcer(subagent.Limits)
 			enforcer.usage = subagent.Usage
@@ -200,12 +200,12 @@ func (r *Runner) Abort(subagentID string) error {
 	}
 
 	r.abortSubagent(subagentID, "manual abort")
-	
+
 	ctx := context.Background()
 	r.emitter.Emit(ctx, NewEvent(EventAborted, subagentID, subagent.TaskID, map[string]interface{}{
 		"reason": "manual abort",
 	}))
-	
+
 	return nil
 }
 
@@ -220,11 +220,11 @@ func (r *Runner) Status(subagentID string) (*SubagentStatus, error) {
 	defer subagent.mu.RUnlock()
 
 	status := &SubagentStatus{
-		ID:       subagent.ID,
-		TaskID:   subagent.TaskID,
-		Status:   subagent.Status,
-		Usage:    subagent.Usage,
-		StartedAt: subagent.StartedAt,
+		ID:          subagent.ID,
+		TaskID:      subagent.TaskID,
+		Status:      subagent.Status,
+		Usage:       subagent.Usage,
+		StartedAt:   subagent.StartedAt,
 		CompletedAt: subagent.CompletedAt,
 	}
 
@@ -279,7 +279,7 @@ func (r *Runner) Cleanup() {
 		subagent.mu.RLock()
 		status := subagent.Status
 		subagent.mu.RUnlock()
-		
+
 		if status == StatusCompleted || status == StatusFailed || status == StatusAborted {
 			delete(r.subagents, id)
 		}
@@ -306,7 +306,7 @@ func (r *Runner) startSubagent(ctx context.Context, subagent *Subagent) {
 		subagent.mu.Unlock()
 		return
 	}
-	
+
 	now := time.Now().UTC()
 	subagent.Status = StatusRunning
 	subagent.StartedAt = &now
@@ -325,7 +325,7 @@ func (r *Runner) startSubagent(ctx context.Context, subagent *Subagent) {
 func (r *Runner) executeSubagent(subagent *Subagent) {
 	// This is a placeholder for actual subagent execution
 	// In Phase 3, this would call the LLM harness
-	
+
 	ctx := context.Background()
 	startTime := time.Now()
 
@@ -335,7 +335,7 @@ func (r *Runner) executeSubagent(subagent *Subagent) {
 	// 2. Call LLM harness
 	// 3. Track turns and tokens
 	// 4. Monitor files changed
-	
+
 	// For now, simulate a simple execution
 	result := &Result{
 		Success:      true,
@@ -424,14 +424,14 @@ func splitLines(s string) []string {
 func trimSpace(s string) string {
 	start := 0
 	end := len(s)
-	
+
 	for start < end && (s[start] == ' ' || s[start] == '\t' || s[start] == '\r' || s[start] == '\n') {
 		start++
 	}
-	
+
 	for end > start && (s[end-1] == ' ' || s[end-1] == '\t' || s[end-1] == '\r' || s[end-1] == '\n') {
 		end--
 	}
-	
+
 	return s[start:end]
 }

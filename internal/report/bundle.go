@@ -75,7 +75,7 @@ func (b *BundleCreator) CreateBundleWithMetadata(
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
-	
+
 	if err := os.WriteFile(metaPath, metaData, 0644); err != nil {
 		return fmt.Errorf("failed to write metadata: %w", err)
 	}
@@ -111,7 +111,7 @@ func (b *BundleCreator) addBundleStructure(tw *tar.Writer, runID string) error {
 		"run_id":         runID,
 		"created_at":     time.Now().UTC().Format(time.RFC3339),
 	}
-	
+
 	if err := b.addJSONToTar(tw, "evidence/bundle-info.json", bundleInfo); err != nil {
 		return err
 	}
@@ -135,7 +135,7 @@ func (b *BundleCreator) addBundleStructure(tw *tar.Writer, runID string) error {
 // addStageArtifacts adds all artifacts from a stage
 func (b *BundleCreator) addStageArtifacts(tw *tar.Writer, runID, stageID string) error {
 	stagePath := filepath.Join(b.basePath, "artifacts", runID, stageID)
-	
+
 	entries, err := os.ReadDir(stagePath)
 	if err != nil {
 		return err
@@ -157,10 +157,10 @@ func (b *BundleCreator) addStageArtifacts(tw *tar.Writer, runID, stageID string)
 		fullPath := fmt.Sprintf("evidence/%s/%s", targetPath, entry.Name())
 
 		// Handle gate reports
-		if strings.HasSuffix(entry.Name(), ".json") && 
-		   entry.Name() != "status.json" &&
-		   entry.Name() != "review-result.json" &&
-		   entry.Name() != "lock-decision.json" {
+		if strings.HasSuffix(entry.Name(), ".json") &&
+			entry.Name() != "status.json" &&
+			entry.Name() != "review-result.json" &&
+			entry.Name() != "lock-decision.json" {
 			// Check if it's a gate report
 			if b.isGateReport(data) {
 				fullPath = fmt.Sprintf("evidence/gate-reports/%s", entry.Name())
@@ -216,7 +216,7 @@ func (b *BundleCreator) isGateReport(data []byte) bool {
 	if err := json.Unmarshal(data, &result); err != nil {
 		return false
 	}
-	
+
 	schema, ok := result["schema_version"].(string)
 	return ok && schema == "codefoundry_gate_report.v1"
 }
@@ -338,7 +338,7 @@ func VerifyBundle(bundlePath string) error {
 
 	// Check tar
 	tarReader := tar.NewReader(gzReader)
-	
+
 	foundBundleInfo := false
 	for {
 		header, err := tarReader.Next()
@@ -351,7 +351,7 @@ func VerifyBundle(bundlePath string) error {
 
 		if header.Name == "evidence/bundle-info.json" {
 			foundBundleInfo = true
-			
+
 			// Verify JSON
 			data := make([]byte, header.Size)
 			if _, err := io.ReadFull(tarReader, data); err != nil {

@@ -19,19 +19,19 @@ import (
 
 // WeeklyMetrics represents metrics for a single week
 type WeeklyMetrics struct {
-	Week            string        `json:"week"` // ISO week format: 2026-W08
-	SuccessRate     float64       `json:"success_rate"`
-	AvgConfidence   float64       `json:"avg_confidence"`
-	AvgRubricScore  int           `json:"avg_rubric_score"`
-	AvgCycleTime    time.Duration `json:"avg_cycle_time"`
-	P1Findings      int           `json:"p1_findings"`
-	P2Findings      int           `json:"p2_findings"`
-	P3Findings      int           `json:"p3_findings"`
-	GatePassRate    float64       `json:"gate_pass_rate"`
-	ReplayPassRate  float64       `json:"replay_pass_rate"`
-	RunsCompleted   int           `json:"runs_completed"`
-	RunsFailed      int           `json:"runs_failed"`
-	TotalRuns       int           `json:"total_runs"`
+	Week           string        `json:"week"` // ISO week format: 2026-W08
+	SuccessRate    float64       `json:"success_rate"`
+	AvgConfidence  float64       `json:"avg_confidence"`
+	AvgRubricScore int           `json:"avg_rubric_score"`
+	AvgCycleTime   time.Duration `json:"avg_cycle_time"`
+	P1Findings     int           `json:"p1_findings"`
+	P2Findings     int           `json:"p2_findings"`
+	P3Findings     int           `json:"p3_findings"`
+	GatePassRate   float64       `json:"gate_pass_rate"`
+	ReplayPassRate float64       `json:"replay_pass_rate"`
+	RunsCompleted  int           `json:"runs_completed"`
+	RunsFailed     int           `json:"runs_failed"`
+	TotalRuns      int           `json:"total_runs"`
 }
 
 // GetISOWeek returns the ISO week string (e.g., "2026-W08")
@@ -98,13 +98,13 @@ func GetWeekRange(weekStr string) (start, end time.Time, err error) {
 
 // RunData represents data extracted from a single run
 type RunData struct {
-	RunID          string
-	Timestamp      time.Time
-	Success        bool
-	ReviewResult   *review.ReviewResult
-	LockDecision   *lock.LockDecision
-	GateResults    []gate.GateResult
-	CycleTime      time.Duration
+	RunID        string
+	Timestamp    time.Time
+	Success      bool
+	ReviewResult *review.ReviewResult
+	LockDecision *lock.LockDecision
+	GateResults  []gate.GateResult
+	CycleTime    time.Duration
 }
 
 // ExtractRunData extracts metrics data from a run's artifacts
@@ -339,7 +339,7 @@ func GetWeeksInRange(start, end time.Time) []string {
 // LoadWeeklyReport loads a previously saved weekly report
 func LoadWeeklyReport(basePath, weekStr string) (*WeeklyMetrics, error) {
 	reportPath := filepath.Join(basePath, "metrics", fmt.Sprintf("weekly-%s.json", weekStr))
-	
+
 	data, err := os.ReadFile(reportPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load weekly report: %w", err)
@@ -356,7 +356,7 @@ func LoadWeeklyReport(basePath, weekStr string) (*WeeklyMetrics, error) {
 // SaveWeeklyReport saves a weekly report
 func SaveWeeklyReport(basePath string, metrics *WeeklyMetrics) error {
 	reportPath := filepath.Join(basePath, "metrics", fmt.Sprintf("weekly-%s.json", metrics.Week))
-	
+
 	// Ensure directory exists
 	dir := filepath.Dir(reportPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {

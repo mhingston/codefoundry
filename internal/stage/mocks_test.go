@@ -64,10 +64,10 @@ func (m *MockWorktreeManager) GetDiff(worktreeID string) (string, error) {
 
 // MockSubagentRunner implements SubagentRunner for testing
 type MockSubagentRunner struct {
-	SpawnFunc     func(req subagent.SpawnRequest) (*subagent.Subagent, error)
-	WaitFunc      func(ctx context.Context, subagentID string) (*subagent.Result, error)
-	SpawnCalls    []subagent.SpawnRequest
-	WaitCalls     []string
+	SpawnFunc  func(req subagent.SpawnRequest) (*subagent.Subagent, error)
+	WaitFunc   func(ctx context.Context, subagentID string) (*subagent.Result, error)
+	SpawnCalls []subagent.SpawnRequest
+	WaitCalls  []string
 }
 
 func (m *MockSubagentRunner) Spawn(req subagent.SpawnRequest) (*subagent.Subagent, error) {
@@ -103,9 +103,9 @@ func (m *MockSubagentRunner) Wait(ctx context.Context, subagentID string) (*suba
 
 // MockHookExecutor implements HookExecutor for testing
 type MockHookExecutor struct {
-	CallFunc      func(hook protocol.Hook, ctx HookContext) (*HookResult, error)
-	CallCount     int
-	CallHistory   []HookCall
+	CallFunc    func(hook protocol.Hook, ctx HookContext) (*HookResult, error)
+	CallCount   int
+	CallHistory []HookCall
 }
 
 type HookCall struct {

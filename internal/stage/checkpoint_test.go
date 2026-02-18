@@ -366,7 +366,7 @@ func TestCheckpointManager_UpdateCheckpointData(t *testing.T) {
 	// Verify merged data
 	checkpoint, err := cm.Restore("stage1")
 	require.NoError(t, err)
-	assert.Equal(t, "value1", checkpoint.Data["key1"]) // Original
+	assert.Equal(t, "value1", checkpoint.Data["key1"])  // Original
 	assert.Equal(t, "updated", checkpoint.Data["key2"]) // Updated
 	assert.Equal(t, "value3", checkpoint.Data["key3"])  // New
 }

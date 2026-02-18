@@ -25,15 +25,15 @@ func IsValidSeverity(s string) bool {
 
 // Finding represents a single review finding
 type Finding struct {
-	ID       string   `json:"id"`
-	Severity Severity `json:"severity"`
-	File     string   `json:"file"`
-	Line     int      `json:"line,omitempty"`
-	Column   int      `json:"column,omitempty"`
-	Message  string   `json:"message"`
-	Category string   `json:"category"`
-	Code     string   `json:"code,omitempty"`      // Snippet of code
-	Suggestion string `json:"suggestion,omitempty"` // Suggested fix
+	ID         string   `json:"id"`
+	Severity   Severity `json:"severity"`
+	File       string   `json:"file"`
+	Line       int      `json:"line,omitempty"`
+	Column     int      `json:"column,omitempty"`
+	Message    string   `json:"message"`
+	Category   string   `json:"category"`
+	Code       string   `json:"code,omitempty"`       // Snippet of code
+	Suggestion string   `json:"suggestion,omitempty"` // Suggested fix
 }
 
 // ClassificationRule defines a rule for classifying findings

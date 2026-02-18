@@ -15,10 +15,10 @@ import (
 func setupTestArtifacts(t *testing.T, runID string) (string, *artifact.Store) {
 	tempDir := t.TempDir()
 	basePath := filepath.Join(tempDir, ".codefoundry")
-	
+
 	ns := artifact.NewNamespace(basePath, runID)
 	store := artifact.NewStore(ns)
-	
+
 	return basePath, store
 }
 

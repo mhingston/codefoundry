@@ -24,20 +24,20 @@ const (
 
 // WorktreeConfig contains configuration for creating a worktree
 type WorktreeConfig struct {
-	TaskID          string
-	BaseBranch      string
-	WorkingDir      string
-	IsolationLevel  string
+	TaskID         string
+	BaseBranch     string
+	WorkingDir     string
+	IsolationLevel string
 }
 
 // Worktree represents a git worktree for task isolation
 type Worktree struct {
-	ID        string
-	TaskID    string
-	Path      string
-	Branch    string
+	ID         string
+	TaskID     string
+	Path       string
+	Branch     string
 	BaseCommit string
-	CreatedAt time.Time
+	CreatedAt  time.Time
 }
 
 // MergeResult contains the result of a merge operation
@@ -50,10 +50,10 @@ type MergeResult struct {
 
 // Manager handles git worktree operations
 type Manager struct {
-	repoRoot    string
-	basePath    string
-	worktrees   map[string]*Worktree
-	mu          sync.RWMutex
+	repoRoot  string
+	basePath  string
+	worktrees map[string]*Worktree
+	mu        sync.RWMutex
 }
 
 // NewManager creates a new worktree manager
@@ -110,7 +110,7 @@ func (m *Manager) Create(taskID string, config WorktreeConfig) (*Worktree, error
 	// Create worktree directory
 	worktreeID := fmt.Sprintf("wt-%s", taskID)
 	worktreePath := filepath.Join(m.basePath, worktreeID)
-	
+
 	if err := os.MkdirAll(worktreePath, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create worktree directory: %w", err)
 	}

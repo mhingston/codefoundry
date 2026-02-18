@@ -13,16 +13,16 @@ import (
 
 // Runner executes stages in dependency order
 type Runner struct {
-	protocolDef     *protocol.Protocol
-	resolver        *protocol.Resolver
-	stateManager    *StateManager
-	checkpointMgr   *CheckpointManager
-	artifactStore   *artifact.Store
-	gateExecutor    *gate.Executor
-	namespace       *artifact.Namespace
-	handlers        map[string]StageHandler
+	protocolDef      *protocol.Protocol
+	resolver         *protocol.Resolver
+	stateManager     *StateManager
+	checkpointMgr    *CheckpointManager
+	artifactStore    *artifact.Store
+	gateExecutor     *gate.Executor
+	namespace        *artifact.Namespace
+	handlers         map[string]StageHandler
 	artifactBasePath string
-	basePath        string
+	basePath         string
 }
 
 // StageHandler is a function that executes a stage
@@ -39,27 +39,27 @@ type StageInput struct {
 
 // StageResult contains the result of stage execution
 type StageResult struct {
-	Status    string
-	Summary   string
-	Outputs   []string
-	Evidence  []string
-	Error     error
-	Metadata  map[string]interface{}
+	Status   string
+	Summary  string
+	Outputs  []string
+	Evidence []string
+	Error    error
+	Metadata map[string]interface{}
 }
 
 // NewRunner creates a new stage runner
 func NewRunner(p *protocol.Protocol, basePath string) *Runner {
 	runner := &Runner{
-		protocolDef:     p,
-		resolver:        protocol.NewResolver(p),
-		stateManager:    NewStateManager(basePath),
-		basePath:        basePath,
+		protocolDef:      p,
+		resolver:         protocol.NewResolver(p),
+		stateManager:     NewStateManager(basePath),
+		basePath:         basePath,
 		artifactBasePath: filepath.Join(basePath, "artifacts"),
-		handlers:        make(map[string]StageHandler),
+		handlers:         make(map[string]StageHandler),
 	}
-	
+
 	runner.checkpointMgr = NewCheckpointManager(runner.stateManager, basePath)
-	
+
 	return runner
 }
 
@@ -100,7 +100,7 @@ func (r *Runner) Initialize() error {
 	// Create namespace
 	runID := r.stateManager.GetRunID()
 	r.namespace = artifact.NewNamespace(r.basePath, runID)
-	
+
 	// Create artifact store
 	r.artifactStore = artifact.NewStore(r.namespace)
 
@@ -370,14 +370,14 @@ func (r *Runner) CompleteStage(stageID string, artifacts map[string][]byte) erro
 
 // StageStatus represents a stage status
 type StageStatus struct {
-	SchemaVersion string   `json:"schema_version"`
-	StageID       string   `json:"stage_id"`
-	Status        string   `json:"status"`
-	Summary       string   `json:"summary,omitempty"`
-	Evidence      []string `json:"evidence,omitempty"`
-	StartedAt     string   `json:"started_at,omitempty"`
-	CompletedAt   string   `json:"completed_at,omitempty"`
-	Error         string   `json:"error,omitempty"`
-	DurationMs    int64    `json:"duration_ms,omitempty"`
+	SchemaVersion string                 `json:"schema_version"`
+	StageID       string                 `json:"stage_id"`
+	Status        string                 `json:"status"`
+	Summary       string                 `json:"summary,omitempty"`
+	Evidence      []string               `json:"evidence,omitempty"`
+	StartedAt     string                 `json:"started_at,omitempty"`
+	CompletedAt   string                 `json:"completed_at,omitempty"`
+	Error         string                 `json:"error,omitempty"`
+	DurationMs    int64                  `json:"duration_ms,omitempty"`
 	Metadata      map[string]interface{} `json:"metadata,omitempty"`
 }

@@ -21,10 +21,10 @@ func createTestProtocol(t *testing.T) *protocol.Protocol {
 		Description: "Test protocol",
 		Stages: []protocol.Stage{
 			{
-				ID:       "stage1",
-				Name:     "Stage 1",
-				Type:     "spec",
-				Outputs:  []string{"output1.txt"},
+				ID:      "stage1",
+				Name:    "Stage 1",
+				Type:    "spec",
+				Outputs: []string{"output1.txt"},
 			},
 			{
 				ID:        "stage2",
@@ -832,8 +832,6 @@ func TestRunner_RunStage_HandlerReturnsResultWithError(t *testing.T) {
 	status, _ := runner.stateManager.GetStageStatus("stage1")
 	assert.Equal(t, StatusFail, status)
 }
-
-
 
 func TestRunner_Load_StateLoadError(t *testing.T) {
 	tmpDir := t.TempDir()

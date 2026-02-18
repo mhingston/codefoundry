@@ -26,9 +26,9 @@ type AuditReport struct {
 
 // Summary contains audit summary statistics
 type Summary struct {
-	Total       int `json:"total"`
-	Warnings    int `json:"warnings"`
-	Errors      int `json:"errors"`
+	Total        int `json:"total"`
+	Warnings     int `json:"warnings"`
+	Errors       int `json:"errors"`
 	FilesChecked int `json:"files_checked"`
 }
 

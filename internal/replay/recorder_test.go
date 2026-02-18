@@ -124,7 +124,7 @@ func TestRecorder_Save(t *testing.T) {
 	// Create temporary directory
 	tempDir := t.TempDir()
 	basePath := filepath.Join(tempDir, ".codefoundry")
-	
+
 	ns := artifact.NewNamespace(basePath, "test-run")
 	store := artifact.NewStore(ns)
 
@@ -212,7 +212,7 @@ func TestToMap_InvalidData(t *testing.T) {
 	// Test with channel (can't be marshaled)
 	ch := make(chan int)
 	result := toMap(ch)
-	
+
 	assert.NotNil(t, result)
 	assert.Contains(t, result, "_error")
 }

@@ -7,19 +7,19 @@ import (
 
 func TestDefaultLimits(t *testing.T) {
 	limits := DefaultLimits()
-	
+
 	if limits.MaxTurns != 50 {
 		t.Errorf("expected max turns 50, got %d", limits.MaxTurns)
 	}
-	
+
 	if limits.MaxTokens != 100000 {
 		t.Errorf("expected max tokens 100000, got %d", limits.MaxTokens)
 	}
-	
+
 	if limits.Timeout != 30*time.Minute {
 		t.Errorf("expected timeout 30m, got %v", limits.Timeout)
 	}
-	
+
 	if limits.MemoryMB != 0 {
 		t.Errorf("expected memory limit 0 (unlimited), got %d", limits.MemoryMB)
 	}
@@ -27,8 +27,8 @@ func TestDefaultLimits(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	tests := []struct {
-		name   string
-		limits Limits
+		name    string
+		limits  Limits
 		wantErr bool
 	}{
 		{
@@ -72,7 +72,7 @@ func TestValidate(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.limits.Validate()
@@ -93,7 +93,7 @@ func TestMerge(t *testing.T) {
 		Timeout:   30 * time.Minute,
 		MemoryMB:  0,
 	}
-	
+
 	// Empty other - should keep base
 	merged := base.Merge(Limits{})
 	if merged.MaxTurns != 50 {
@@ -102,7 +102,7 @@ func TestMerge(t *testing.T) {
 	if merged.MaxTokens != 100000 {
 		t.Errorf("expected max tokens 100000, got %d", merged.MaxTokens)
 	}
-	
+
 	// Override some values
 	other := Limits{
 		MaxTurns: 100,
@@ -127,12 +127,12 @@ func TestIsExceeded(t *testing.T) {
 		Timeout:   time.Minute,
 		MemoryMB:  512,
 	}
-	
+
 	tests := []struct {
-		name      string
-		usage     Usage
-		exceeded  bool
-		reason    string
+		name     string
+		usage    Usage
+		exceeded bool
+		reason   string
 	}{
 		{
 			name:     "within limits",
@@ -171,7 +171,7 @@ func TestIsExceeded(t *testing.T) {
 			reason:   "",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exceeded, reason := limits.IsExceeded(tt.usage)
@@ -192,34 +192,34 @@ func TestEnforcer(t *testing.T) {
 		Timeout:   time.Minute,
 		MemoryMB:  512,
 	}
-	
+
 	enforcer := NewEnforcer(limits)
-	
+
 	// Check initial state
 	if enforcer.GetLimits().MaxTurns != 10 {
 		t.Errorf("expected max turns 10, got %d", enforcer.GetLimits().MaxTurns)
 	}
-	
+
 	// Check turn
 	exceeded, _ := enforcer.CheckTurn()
 	if exceeded {
 		t.Error("should not be exceeded after first turn")
 	}
-	
+
 	if enforcer.GetUsage().TurnsUsed != 1 {
 		t.Errorf("expected 1 turn used, got %d", enforcer.GetUsage().TurnsUsed)
 	}
-	
+
 	// Record tokens
 	exceeded, _ = enforcer.RecordTokens(500)
 	if exceeded {
 		t.Error("should not be exceeded after 500 tokens")
 	}
-	
+
 	if enforcer.GetUsage().TokensUsed != 500 {
 		t.Errorf("expected 500 tokens used, got %d", enforcer.GetUsage().TokensUsed)
 	}
-	
+
 	// Check remaining
 	remaining := enforcer.Remaining()
 	if remaining.TurnsUsed != 9 {
@@ -228,7 +228,7 @@ func TestEnforcer(t *testing.T) {
 	if remaining.TokensUsed != 500 {
 		t.Errorf("expected 500 tokens remaining, got %d", remaining.TokensUsed)
 	}
-	
+
 	// Check progress
 	progress := enforcer.Progress()
 	// Turn progress: 1/10 = 10%
@@ -242,10 +242,10 @@ func TestEnforcer(t *testing.T) {
 func TestEnforcerUpdateLimits(t *testing.T) {
 	limits := Limits{MaxTurns: 10, MaxTokens: 1000, Timeout: time.Minute}
 	enforcer := NewEnforcer(limits)
-	
+
 	newLimits := Limits{MaxTurns: 20, MaxTokens: 2000, Timeout: 2 * time.Minute}
 	enforcer.UpdateLimits(newLimits)
-	
+
 	if enforcer.GetLimits().MaxTurns != 20 {
 		t.Errorf("expected max turns 20, got %d", enforcer.GetLimits().MaxTurns)
 	}
@@ -257,19 +257,19 @@ func TestEnforcerUpdateLimits(t *testing.T) {
 func TestEnforcerExceedTurns(t *testing.T) {
 	limits := Limits{MaxTurns: 2, MaxTokens: 1000, Timeout: time.Minute}
 	enforcer := NewEnforcer(limits)
-	
+
 	// First turn - OK
 	exceeded, _ := enforcer.CheckTurn()
 	if exceeded {
 		t.Error("should not be exceeded after first turn")
 	}
-	
+
 	// Second turn - OK
 	exceeded, _ = enforcer.CheckTurn()
 	if exceeded {
 		t.Error("should not be exceeded after second turn")
 	}
-	
+
 	// Third turn - Exceeds
 	exceeded, reason := enforcer.CheckTurn()
 	if !exceeded {
@@ -350,7 +350,7 @@ func TestLimitsExceeded(t *testing.T) {
 			reason:   "",
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exceeded, reason := tt.limits.IsExceeded(tt.usage)
@@ -372,14 +372,14 @@ func TestLimitsZeroValues(t *testing.T) {
 		Timeout:   0, // Unlimited
 		MemoryMB:  0, // Unlimited
 	}
-	
+
 	usage := Usage{
 		TurnsUsed:  1000000,
 		TokensUsed: 1000000,
 		Duration:   24 * time.Hour,
 		MemoryUsed: 1000000,
 	}
-	
+
 	exceeded, _ := limits.IsExceeded(usage)
 	if exceeded {
 		t.Error("expected zero limits to be treated as unlimited")
@@ -408,7 +408,7 @@ func TestLimitsNegative(t *testing.T) {
 			limits: Limits{MaxTurns: 10, MaxTokens: 100, Timeout: time.Second, MemoryMB: -1},
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.limits.Validate()
@@ -426,19 +426,19 @@ func TestLimitsUpdate(t *testing.T) {
 		MaxTokens: 1000,
 		Timeout:   time.Minute,
 	})
-	
+
 	// Record some usage
 	enforcer.CheckTurn()
 	enforcer.CheckTurn()
 	enforcer.RecordTokens(500)
-	
+
 	// Update limits to be more restrictive
 	enforcer.UpdateLimits(Limits{
-		MaxTurns:  1,  // Now exceeded
+		MaxTurns:  1, // Now exceeded
 		MaxTokens: 1000,
 		Timeout:   time.Minute,
 	})
-	
+
 	// Should now be exceeded
 	exceeded, reason := enforcer.CheckTurn()
 	if !exceeded {
@@ -456,26 +456,26 @@ func TestEnforcerProgressEdgeCases(t *testing.T) {
 		MaxTokens: 0,
 		Timeout:   0,
 	})
-	
+
 	progress := enforcer.Progress()
 	if progress != 0 {
 		t.Errorf("expected 0%% progress with unlimited limits, got %f%%", progress)
 	}
-	
+
 	// Test progress at 100%
 	enforcer2 := NewEnforcer(Limits{
 		MaxTurns:  10,
 		MaxTokens: 100,
 		Timeout:   time.Minute,
 	})
-	
+
 	// Use exactly the limit
 	enforcer2.usage = Usage{
 		TurnsUsed:  10,
 		TokensUsed: 100,
 		Duration:   time.Minute,
 	}
-	
+
 	progress = enforcer2.Progress()
 	if progress != 100.0 {
 		t.Errorf("expected 100%% progress at limit, got %f%%", progress)
@@ -489,19 +489,19 @@ func TestEnforcerRemaining(t *testing.T) {
 		Timeout:   time.Minute,
 		MemoryMB:  512,
 	})
-	
+
 	// Record some usage
 	enforcer.CheckTurn()
 	enforcer.CheckTurn()
 	enforcer.CheckTurn()
 	enforcer.RecordTokens(300)
-	
+
 	remaining := enforcer.Remaining()
-	
+
 	if remaining.TurnsUsed != 7 {
 		t.Errorf("expected 7 turns remaining, got %d", remaining.TurnsUsed)
 	}
-	
+
 	if remaining.TokensUsed != 700 {
 		t.Errorf("expected 700 tokens remaining, got %d", remaining.TokensUsed)
 	}
@@ -513,13 +513,13 @@ func TestEnforcerRecordTokensExceeded(t *testing.T) {
 		MaxTokens: 100,
 		Timeout:   time.Minute,
 	})
-	
+
 	// Record tokens within limit
 	exceeded, _ := enforcer.RecordTokens(50)
 	if exceeded {
 		t.Error("should not be exceeded after 50 tokens")
 	}
-	
+
 	// Record more tokens to exceed limit
 	exceeded, reason := enforcer.RecordTokens(60)
 	if !exceeded {
@@ -538,16 +538,16 @@ func TestLimitsMergeEdgeCases(t *testing.T) {
 		Timeout:   time.Minute,
 		MemoryMB:  0,
 	}
-	
+
 	other := Limits{
 		MaxTurns:  20,
 		MaxTokens: 2000,
 		Timeout:   2 * time.Minute,
 		MemoryMB:  512,
 	}
-	
+
 	merged := base.Merge(other)
-	
+
 	if merged.MaxTurns != 20 {
 		t.Errorf("expected MaxTurns 20, got %d", merged.MaxTurns)
 	}
@@ -560,12 +560,12 @@ func TestLimitsMergeEdgeCases(t *testing.T) {
 	if merged.MemoryMB != 512 {
 		t.Errorf("expected MemoryMB 512, got %d", merged.MemoryMB)
 	}
-	
+
 	// Test merge with partial override
 	partial := Limits{
 		MaxTurns: 30,
 	}
-	
+
 	merged = base.Merge(partial)
 	if merged.MaxTurns != 30 {
 		t.Errorf("expected MaxTurns 30, got %d", merged.MaxTurns)
@@ -585,7 +585,7 @@ func TestUsageStruct(t *testing.T) {
 		Duration:   5 * time.Minute,
 		MemoryUsed: 512,
 	}
-	
+
 	if usage.TurnsUsed != 10 {
 		t.Errorf("expected TurnsUsed 10, got %d", usage.TurnsUsed)
 	}

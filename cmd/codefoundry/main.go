@@ -50,12 +50,12 @@ to external harnesses (opencode, codex, claude, copilot, etc.).`,
 }
 
 var (
-	basePath       string
-	protocolPath   string
-	stageID        string
-	artifactPath   string
-	forceFlag      bool
-	verboseFlag    bool
+	basePath     string
+	protocolPath string
+	stageID      string
+	artifactPath string
+	forceFlag    bool
+	verboseFlag  bool
 )
 
 func init() {
@@ -74,29 +74,29 @@ func init() {
 	rootCmd.AddCommand(lockCmd)
 	rootCmd.AddCommand(bundleCmd)
 	rootCmd.AddCommand(reportCmd)
-	
+
 	// Phase 4: Autonomy Hardening commands
 	rootCmd.AddCommand(replayCmd)
 	rootCmd.AddCommand(flakeCmd)
 	rootCmd.AddCommand(metricsCmd)
 	rootCmd.AddCommand(ciCmd)
 	rootCmd.AddCommand(goldenCmd)
-	
+
 	// Replay command subcommands
 	replayCmd.AddCommand(replayRecordCmd)
 	replayCmd.AddCommand(replayVerifyCmd)
 	replayCmd.AddCommand(replayListCmd)
-	
+
 	// Flake command subcommands
 	flakeCmd.AddCommand(flakeDetectCmd)
-	
+
 	// Metrics command subcommands
 	metricsCmd.AddCommand(metricsGenerateCmd)
 	metricsCmd.AddCommand(metricsTrendCmd)
-	
+
 	// CI command subcommands
 	ciCmd.AddCommand(ciInitCmd)
-	
+
 	// Golden command subcommands
 	goldenCmd.AddCommand(goldenAuditCmd)
 
@@ -106,53 +106,53 @@ func init() {
 
 	// Complete command args
 	completeCmd.Flags().StringVarP(&artifactPath, "artifacts", "a", "", "Path to artifacts (required)")
-	
+
 	// Worktree merge command flags
 	worktreeMergeCmd.Flags().StringP("strategy", "s", "fail", "Merge strategy (fail, ours, theirs)")
-	
+
 	// Add subcommands
 	worktreeCmd.AddCommand(worktreeCreateCmd)
 	worktreeCmd.AddCommand(worktreeListCmd)
 	worktreeCmd.AddCommand(worktreeMergeCmd)
 	worktreeCmd.AddCommand(worktreeDeleteCmd)
-	
+
 	subagentCmd.AddCommand(subagentSpawnCmd)
 	subagentCmd.AddCommand(subagentStatusCmd)
 	subagentCmd.AddCommand(subagentAbortCmd)
-	
+
 	// Review command flags
 	reviewCmd.Flags().StringP("template", "t", "", "Path to review template")
 	reviewCmd.Flags().Float64P("confidence-threshold", "c", 0.7, "Confidence threshold for auto-approval")
 	reviewCmd.Flags().StringP("output", "o", "", "Output file for review result")
-	
+
 	// Lock command flags
 	lockCmd.Flags().StringP("stage", "s", "", "Stage ID to evaluate")
 	lockCmd.Flags().Float64P("confidence-threshold", "c", 0.7, "Confidence threshold for auto-approval")
 	lockCmd.Flags().BoolP("auto-resolve", "a", true, "Auto-resolve when conditions are met")
-	
+
 	// Bundle command flags
 	bundleCmd.Flags().StringP("output", "o", "", "Output path for bundle")
 	bundleCmd.Flags().StringP("format", "f", "tar.gz", "Bundle format (tar.gz)")
-	
+
 	// Report command flags
 	reportCmd.Flags().StringP("format", "f", "json", "Report format (json, markdown, ci)")
 	reportCmd.Flags().StringP("output", "o", "", "Output file for report")
-	
+
 	// Replay command flags
 	replayRecordCmd.Flags().BoolP("enable", "e", true, "Enable recording mode")
 	replayVerifyCmd.Flags().IntP("replays", "n", 1, "Number of replays")
-	
+
 	// Flake detection command flags
 	flakeDetectCmd.Flags().IntP("replays", "n", 5, "Number of replays (default: 5)")
 	flakeDetectCmd.Flags().Float64P("threshold", "t", 0.95, "Success rate threshold (default: 0.95)")
-	
+
 	// Metrics command flags
 	metricsGenerateCmd.Flags().StringP("week", "w", "", "ISO week (default: current)")
 	metricsTrendCmd.Flags().IntP("weeks", "n", 4, "Number of weeks (default: 4)")
-	
+
 	// CI command flags
 	ciInitCmd.Flags().StringP("provider", "p", "github", "CI provider (default: github)")
-	
+
 	// Golden command flags
 	goldenAuditCmd.Flags().StringP("path", "p", ".", "Path to audit")
 }
@@ -480,7 +480,7 @@ func runWorkflow(ctx context.Context) error {
 
 func showStatus() error {
 	stateManager := stagepkg.NewStateManager(basePath)
-	
+
 	if !stateManager.StateExists() {
 		fmt.Println("No workflow initialized. Run 'codefoundry init' first.")
 		return nil
@@ -520,7 +520,7 @@ func showStatus() error {
 		case "skipped":
 			symbol = "⊘"
 		}
-		
+
 		stageState, _ := stateManager.GetStageState(stageID)
 		if stageState != nil && stageState.CompletedAt != nil {
 			duration := stageState.CompletedAt.Sub(*stageState.StartedAt)
@@ -568,7 +568,7 @@ func completeStage(ctx context.Context, stageID string) error {
 
 	// Read artifacts from path
 	artifacts := make(map[string][]byte)
-	
+
 	if info, err := os.Stat(artifactPath); err == nil {
 		if info.IsDir() {
 			// Read all files in directory
@@ -576,12 +576,12 @@ func completeStage(ctx context.Context, stageID string) error {
 			if err != nil {
 				return fmt.Errorf("failed to read artifacts: %w", err)
 			}
-			
+
 			for _, entry := range entries {
 				if entry.IsDir() {
 					continue
 				}
-				
+
 				content, err := os.ReadFile(filepath.Join(artifactPath, entry.Name()))
 				if err != nil {
 					return fmt.Errorf("failed to read artifact %s: %w", entry.Name(), err)
@@ -619,7 +619,7 @@ func completeStage(ctx context.Context, stageID string) error {
 
 func validateProtocol(path string) error {
 	loader := protocol.NewLoader()
-	
+
 	p, err := loader.LoadAndValidate(path)
 	if err != nil {
 		return fmt.Errorf("protocol validation failed: %w", err)
@@ -645,7 +645,7 @@ func validateProtocol(path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve dependencies: %w", err)
 	}
-	
+
 	fmt.Printf("  Execution order: %s\n", strings.Join(order, " -> "))
 
 	return nil
@@ -655,46 +655,46 @@ func validateProtocol(path string) error {
 
 func worktreeCreate(taskID string) error {
 	worktreeBase := filepath.Join(basePath, "worktrees")
-	
+
 	manager := worktree.NewManager(".", worktreeBase)
-	
+
 	if !manager.IsGitRepository() {
 		return fmt.Errorf("not a git repository")
 	}
-	
+
 	config := worktree.WorktreeConfig{
 		TaskID:     taskID,
 		BaseBranch: "main",
 		WorkingDir: ".",
 	}
-	
+
 	wt, err := manager.Create(taskID, config)
 	if err != nil {
 		return fmt.Errorf("failed to create worktree: %w", err)
 	}
-	
+
 	fmt.Printf("Created worktree: %s\n", wt.ID)
 	fmt.Printf("  Path: %s\n", wt.Path)
 	fmt.Printf("  Branch: %s\n", wt.Branch)
-	
+
 	return nil
 }
 
 func worktreeList() error {
 	worktreeBase := filepath.Join(basePath, "worktrees")
 	manager := worktree.NewManager(".", worktreeBase)
-	
+
 	if !manager.IsGitRepository() {
 		return fmt.Errorf("not a git repository")
 	}
-	
+
 	worktrees := manager.List()
-	
+
 	if len(worktrees) == 0 {
 		fmt.Println("No active worktrees")
 		return nil
 	}
-	
+
 	fmt.Printf("Active worktrees (%d):\n", len(worktrees))
 	for _, wt := range worktrees {
 		fmt.Printf("  %s:\n", wt.ID)
@@ -703,28 +703,28 @@ func worktreeList() error {
 		fmt.Printf("    Branch: %s\n", wt.Branch)
 		fmt.Printf("    Created: %s\n", wt.CreatedAt.Format(time.RFC3339))
 	}
-	
+
 	return nil
 }
 
 func worktreeMerge(worktreeID string, strategy string) error {
 	worktreeBase := filepath.Join(basePath, "worktrees")
 	manager := worktree.NewManager(".", worktreeBase)
-	
+
 	if !manager.IsGitRepository() {
 		return fmt.Errorf("not a git repository")
 	}
-	
+
 	mergeStrategy, err := worktree.ValidateMergeStrategy(strategy)
 	if err != nil {
 		return err
 	}
-	
+
 	result, err := manager.Merge(worktreeID, mergeStrategy)
 	if err != nil {
 		return fmt.Errorf("failed to merge: %w", err)
 	}
-	
+
 	if !result.Success {
 		if len(result.Conflicts) > 0 {
 			fmt.Printf("Merge failed with conflicts:\n")
@@ -735,33 +735,33 @@ func worktreeMerge(worktreeID string, strategy string) error {
 		}
 		return fmt.Errorf("merge failed: %v", result.Error)
 	}
-	
+
 	fmt.Printf("Worktree %s merged successfully\n", worktreeID)
-	
+
 	if len(result.Conflicts) > 0 {
 		fmt.Println("Resolved conflicts:")
 		for _, conflict := range result.Conflicts {
 			fmt.Printf("  - %s\n", conflict)
 		}
 	}
-	
+
 	return nil
 }
 
 func worktreeDelete(worktreeID string) error {
 	worktreeBase := filepath.Join(basePath, "worktrees")
 	manager := worktree.NewManager(".", worktreeBase)
-	
+
 	if !manager.IsGitRepository() {
 		return fmt.Errorf("not a git repository")
 	}
-	
+
 	if err := manager.Delete(worktreeID); err != nil {
 		return fmt.Errorf("failed to delete worktree: %w", err)
 	}
-	
+
 	fmt.Printf("Deleted worktree: %s\n", worktreeID)
-	
+
 	return nil
 }
 
@@ -769,44 +769,44 @@ func worktreeDelete(worktreeID string) error {
 
 func subagentSpawn(taskID string) error {
 	runner := subagent.NewRunner(basePath)
-	
+
 	limits := subagent.Limits{
 		MaxTurns:  50,
 		MaxTokens: 100000,
 		Timeout:   30 * time.Minute,
 	}
-	
+
 	worktreePath := filepath.Join(basePath, "worktrees", fmt.Sprintf("wt-%s", taskID))
-	
+
 	req := subagent.SpawnRequest{
 		TaskID:       taskID,
 		WorktreePath: worktreePath,
 		Limits:       limits,
 		Prompt:       "Execute task",
 	}
-	
+
 	subagent, err := runner.Spawn(req)
 	if err != nil {
 		return fmt.Errorf("failed to spawn subagent: %w", err)
 	}
-	
+
 	fmt.Printf("Spawned subagent: %s\n", subagent.ID)
 	fmt.Printf("  Task: %s\n", subagent.TaskID)
 	fmt.Printf("  Worktree: %s\n", subagent.Worktree)
 	fmt.Printf("  Status: %s\n", subagent.Status)
-	
+
 	return nil
 }
 
 func subagentStatus(subagentID string) error {
 	runner := subagent.NewRunner(basePath)
-	
+
 	if subagentID != "" {
 		status, err := runner.Status(subagentID)
 		if err != nil {
 			return fmt.Errorf("failed to get status: %w", err)
 		}
-		
+
 		fmt.Printf("Subagent: %s\n", status.ID)
 		fmt.Printf("  Task: %s\n", status.TaskID)
 		fmt.Printf("  Status: %s\n", status.Status)
@@ -816,19 +816,19 @@ func subagentStatus(subagentID string) error {
 	} else {
 		// List all subagents
 		subagents := runner.List()
-		
+
 		if len(subagents) == 0 {
 			fmt.Println("No active subagents")
 			return nil
 		}
-		
+
 		fmt.Printf("Active subagents (%d):\n", len(subagents))
 		for _, sa := range subagents {
-			fmt.Printf("  %s: %s (task: %s, duration: %v)\n", 
+			fmt.Printf("  %s: %s (task: %s, duration: %v)\n",
 				sa.ID, sa.Status, sa.TaskID, sa.Duration)
 		}
 	}
-	
+
 	return nil
 }
 
@@ -859,50 +859,50 @@ var replayVerifyCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		runID := args[0]
 		replayCount, _ := cmd.Flags().GetInt("replays")
-		
+
 		// Load protocol
 		loader := protocol.NewLoader()
 		p, err := loader.LoadAndValidate(protocolPath)
 		if err != nil {
 			return fmt.Errorf("failed to load protocol: %w", err)
 		}
-		
+
 		// Create runner
 		runner := stagepkg.NewRunner(p, basePath)
-		
+
 		// Replay
 		fmt.Printf("Replaying run '%s' (%d times)...\n", runID, replayCount)
-		
+
 		if replayCount == 1 {
 			result, err := replay.Replay(runID, runner, basePath)
 			if err != nil {
 				return fmt.Errorf("replay failed: %w", err)
 			}
-			
+
 			if !result.Matches {
 				fmt.Printf("⚠️  Non-deterministic: %d differences found\n", len(result.Differences))
 				for _, diff := range result.Differences {
-					fmt.Printf("  - %s.%s: expected %v, got %v\n", 
+					fmt.Printf("  - %s.%s: expected %v, got %v\n",
 						diff.StageID, diff.Field, diff.Expected, diff.Actual)
 				}
 				return fmt.Errorf("non-deterministic behavior detected")
 			}
-			
+
 			fmt.Printf("✅ Deterministic: No differences found\n")
 		} else {
 			result, err := replay.ReplayMultiple(runID, runner, basePath, replayCount)
 			if err != nil {
 				return fmt.Errorf("replay failed: %w", err)
 			}
-			
+
 			if !result.Matches {
 				fmt.Printf("⚠️  Non-deterministic across %d replays\n", replayCount)
 				return fmt.Errorf("non-deterministic behavior detected")
 			}
-			
+
 			fmt.Printf("✅ Deterministic across %d replays\n", replayCount)
 		}
-		
+
 		return nil
 	},
 }
@@ -916,17 +916,17 @@ var replayListCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to list traces: %w", err)
 		}
-		
+
 		if len(traces) == 0 {
 			fmt.Println("No execution traces found")
 			return nil
 		}
-		
+
 		fmt.Printf("Execution traces (%d):\n", len(traces))
 		for _, trace := range traces {
 			fmt.Printf("  - %s\n", trace)
 		}
-		
+
 		return nil
 	},
 }
@@ -948,26 +948,26 @@ var flakeDetectCmd = &cobra.Command{
 		runID := args[0]
 		replayCount, _ := cmd.Flags().GetInt("replays")
 		threshold, _ := cmd.Flags().GetFloat64("threshold")
-		
+
 		// Load protocol
 		loader := protocol.NewLoader()
 		p, err := loader.LoadAndValidate(protocolPath)
 		if err != nil {
 			return fmt.Errorf("failed to load protocol: %w", err)
 		}
-		
+
 		// Create runner and detector
 		runner := stagepkg.NewRunner(p, basePath)
 		detector := flake.NewDetector(runner, basePath, threshold)
-		
-		fmt.Printf("Running flake detection on '%s' (%d replays, threshold=%.0f%%)...\n", 
+
+		fmt.Printf("Running flake detection on '%s' (%d replays, threshold=%.0f%%)...\n",
 			runID, replayCount, threshold*100)
-		
+
 		report, err := detector.Detect(runID, replayCount)
 		if err != nil {
 			return fmt.Errorf("flake detection failed: %w", err)
 		}
-		
+
 		// Output results
 		fmt.Printf("\nFlake Detection Report:\n")
 		fmt.Printf("  Run ID: %s\n", report.RunID)
@@ -976,22 +976,22 @@ var flakeDetectCmd = &cobra.Command{
 		fmt.Printf("  Failures: %d\n", report.Failures)
 		fmt.Printf("  Success Rate: %.1f%%\n", report.SuccessRate*100)
 		fmt.Printf("  Threshold: %.1f%%\n", report.Threshold*100)
-		
+
 		if report.IsFlaky {
-			fmt.Printf("\n⚠️  FLAKY: Success rate %.1f%% (below %.1f%% threshold)\n", 
+			fmt.Printf("\n⚠️  FLAKY: Success rate %.1f%% (below %.1f%% threshold)\n",
 				report.SuccessRate*100, report.Threshold*100)
-			
+
 			if len(report.Differences) > 0 {
 				fmt.Printf("\n  Differences found:\n")
 				for _, diff := range report.Differences {
-					fmt.Printf("    - %s.%s (%s): %d occurrences\n", 
+					fmt.Printf("    - %s.%s (%s): %d occurrences\n",
 						diff.StageID, diff.Field, diff.Type, diff.Count)
 				}
 			}
-			
+
 			return fmt.Errorf("flaky behavior detected")
 		}
-		
+
 		fmt.Printf("\n✅ Consistent: Success rate %.1f%%\n", report.SuccessRate*100)
 		return nil
 	},
@@ -1014,7 +1014,7 @@ var metricsGenerateCmd = &cobra.Command{
 		if week == "" {
 			week = metrics.GetCurrentWeek()
 		}
-		
+
 		// Create artifact store for current run
 		stateManager := stagepkg.NewStateManager(basePath)
 		var store *artifact.Store
@@ -1024,13 +1024,13 @@ var metricsGenerateCmd = &cobra.Command{
 				store = artifact.NewStore(ns)
 			}
 		}
-		
+
 		generator := metrics.NewGenerator(store, basePath)
 		report, err := generator.GenerateWeekly(week)
 		if err != nil {
 			return fmt.Errorf("failed to generate metrics: %w", err)
 		}
-		
+
 		// Output
 		fmt.Printf("Weekly Metrics: %s\n", report.Week)
 		fmt.Printf("  Success Rate: %.1f%%\n", report.SuccessRate*100)
@@ -1041,12 +1041,12 @@ var metricsGenerateCmd = &cobra.Command{
 		fmt.Printf("  P3 Findings: %d\n", report.P3Findings)
 		fmt.Printf("  Runs Completed: %d\n", report.RunsCompleted)
 		fmt.Printf("  Runs Failed: %d\n", report.RunsFailed)
-		
+
 		// Save report
 		if err := metrics.SaveWeeklyReport(basePath, report); err != nil {
 			return fmt.Errorf("failed to save report: %w", err)
 		}
-		
+
 		fmt.Printf("\nReport saved to: .codefoundry/metrics/weekly-%s.json\n", week)
 		return nil
 	},
@@ -1058,7 +1058,7 @@ var metricsTrendCmd = &cobra.Command{
 	Long:  `Generate a trend report showing metrics changes over time.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		weeks, _ := cmd.Flags().GetInt("weeks")
-		
+
 		stateManager := stagepkg.NewStateManager(basePath)
 		var store *artifact.Store
 		if stateManager.StateExists() {
@@ -1067,31 +1067,31 @@ var metricsTrendCmd = &cobra.Command{
 				store = artifact.NewStore(ns)
 			}
 		}
-		
+
 		generator := metrics.NewGenerator(store, basePath)
 		trend, err := generator.GenerateTrend(weeks)
 		if err != nil {
 			return fmt.Errorf("failed to generate trend: %w", err)
 		}
-		
+
 		// Output
 		fmt.Printf("Trend Analysis (%d weeks):\n", len(trend.Weeks))
 		fmt.Printf("  Overall Trend: %s\n", trend.Trend)
 		fmt.Printf("  Improvement: %.1f%%\n", trend.Improvement)
-		
+
 		if len(trend.Weeks) > 0 {
 			fmt.Printf("\n  Weekly Breakdown:\n")
 			for _, week := range trend.Weeks {
-				fmt.Printf("    %s: %.1f%% success (%d runs)\n", 
+				fmt.Printf("    %s: %.1f%% success (%d runs)\n",
 					week.Week, week.SuccessRate*100, week.TotalRuns)
 			}
 		}
-		
+
 		// Save trend
 		if err := trend.Save(basePath); err != nil {
 			return fmt.Errorf("failed to save trend: %w", err)
 		}
-		
+
 		fmt.Printf("\nTrend saved to: .codefoundry/metrics/trend.json\n")
 		return nil
 	},
@@ -1111,35 +1111,35 @@ var ciInitCmd = &cobra.Command{
 	Long:  `Generate CI/CD workflow files for the specified provider.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		provider, _ := cmd.Flags().GetString("provider")
-		
+
 		if provider != "github" {
 			return fmt.Errorf("only GitHub Actions is supported")
 		}
-		
+
 		config := ci.DefaultConfig()
-		
+
 		workflow, err := ci.GenerateWorkflowFile(config)
 		if err != nil {
 			return fmt.Errorf("failed to generate workflow: %w", err)
 		}
-		
+
 		// Write to file
 		workflowPath := ".github/workflows/codefoundry.yml"
 		dir := filepath.Dir(workflowPath)
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("failed to create workflow directory: %w", err)
 		}
-		
+
 		if err := os.WriteFile(workflowPath, []byte(workflow), 0644); err != nil {
 			return fmt.Errorf("failed to write workflow file: %w", err)
 		}
-		
+
 		fmt.Printf("✅ GitHub Actions workflow created: %s\n", workflowPath)
 		fmt.Printf("\nThe workflow will:\n")
 		fmt.Printf("  - Run on push and pull_request to %v\n", config.Branches)
 		fmt.Printf("  - Execute stages: %v\n", config.Stages)
 		fmt.Printf("  - Upload evidence as artifacts\n")
-		
+
 		return nil
 	},
 }
@@ -1162,42 +1162,42 @@ var goldenAuditCmd = &cobra.Command{
 		if len(args) > 0 {
 			path = args[0]
 		}
-		
+
 		// Create auditor with default principles
 		auditor := golden.NewAuditor(golden.DefaultPrinciples())
-		
+
 		fmt.Printf("Auditing '%s' for golden principles violations...\n\n", path)
-		
+
 		report, err := auditor.Audit(path)
 		if err != nil {
 			return fmt.Errorf("audit failed: %w", err)
 		}
-		
+
 		// Output report
 		fmt.Println(report.String())
-		
+
 		// Exit with error if errors found
 		if report.HasErrors() {
 			return fmt.Errorf("%d golden principle errors found", report.Summary.Errors)
 		}
-		
+
 		if report.HasWarnings() {
 			fmt.Printf("⚠️  %d warnings found (review recommended)\n", report.Summary.Warnings)
 		}
-		
+
 		return nil
 	},
 }
 
 func subagentAbort(subagentID string) error {
 	runner := subagent.NewRunner(basePath)
-	
+
 	if err := runner.Abort(subagentID); err != nil {
 		return fmt.Errorf("failed to abort subagent: %w", err)
 	}
-	
+
 	fmt.Printf("Aborted subagent: %s\n", subagentID)
-	
+
 	return nil
 }
 
@@ -1325,7 +1325,7 @@ func runReview(cmd *cobra.Command, stageID string) error {
 	// In a real implementation, this would send to harness
 	// For now, we just output the template
 	fmt.Println("Review template generated. Send to harness for evaluation.")
-	
+
 	if verboseFlag {
 		fmt.Printf("\nExpected output format:\n")
 		fmt.Printf("- rubric_score: 0-100\n")
@@ -1412,11 +1412,11 @@ func runLock(cmd *cobra.Command, stageID string) error {
 	// Output decision
 	fmt.Printf("\nLock Decision: %s\n", decision.Decision)
 	fmt.Printf("Reason: %s\n", decision.Reason)
-	
+
 	if decision.EscalationRequired {
 		fmt.Printf("Escalation Required: %s\n", decision.EscalationReason)
 	}
-	
+
 	fmt.Printf("\nMetrics:\n")
 	fmt.Printf("  Confidence: %.2f (threshold: %.2f)\n", decision.ConfidenceScore, decision.ConfidenceThreshold)
 	fmt.Printf("  P1 Findings: %d\n", decision.P1Findings)
@@ -1456,7 +1456,7 @@ func runBundle(cmd *cobra.Command, runID string) error {
 	// Create bundle
 	fmt.Printf("Creating evidence bundle for run '%s'...\n", runID)
 	creator := report.NewBundleCreator(store, basePath)
-	
+
 	if err := creator.CreateBundle(runID, outputPath); err != nil {
 		return fmt.Errorf("failed to create bundle: %w", err)
 	}

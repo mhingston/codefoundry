@@ -238,12 +238,12 @@ func TestGenerateRecommendation(t *testing.T) {
 
 func TestFlakeReport_IsFlaky(t *testing.T) {
 	tests := []struct {
-		name       string
-		successes  int
-		failures   int
-		threshold  float64
-		wantFlaky  bool
-		wantRate   float64
+		name      string
+		successes int
+		failures  int
+		threshold float64
+		wantFlaky bool
+		wantRate  float64
 	}{
 		{
 			name:      "not flaky - above threshold",

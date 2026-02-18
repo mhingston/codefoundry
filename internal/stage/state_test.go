@@ -781,17 +781,17 @@ func TestStateManager_Save_AfterMultipleOperations(t *testing.T) {
 	// Perform multiple operations
 	err = sm.InitializeStage("stage1")
 	require.NoError(t, err)
-	
+
 	err = sm.StartStage("stage1", "/path")
 	require.NoError(t, err)
-	
+
 	err = sm.CompleteStage("stage1", StatusPass, "done")
 	require.NoError(t, err)
-	
+
 	// Save should still work
 	err = sm.Save()
 	require.NoError(t, err)
-	
+
 	// Verify state
 	state := sm.GetState()
 	require.NotNil(t, state)
@@ -804,15 +804,15 @@ func TestStateManager_Initialize_MultipleCalls(t *testing.T) {
 
 	err := sm.Initialize("1.0.0")
 	require.NoError(t, err)
-	
+
 	firstRunID := sm.GetRunID()
-	
+
 	// Initialize again
 	err = sm.Initialize("2.0.0")
 	require.NoError(t, err)
-	
+
 	secondRunID := sm.GetRunID()
-	
+
 	// Should have new run ID
 	assert.NotEqual(t, firstRunID, secondRunID)
 	assert.Equal(t, "2.0.0", sm.GetState().ProtocolVersion)
